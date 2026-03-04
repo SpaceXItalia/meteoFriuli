@@ -128,7 +128,8 @@
       font-size: 0.9rem;
     }
 
-    .field button {
+    .field button,
+    .field .link-button {
       width: 100%;
       background: linear-gradient(180deg, #2a65c8, #1d4da2);
       border: 1px solid rgba(255,255,255,0.12);
@@ -137,6 +138,13 @@
       padding: 10px 12px;
       font-weight: 600;
       cursor: pointer;
+    }
+
+    .field .link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
     }
 
     .field button.secondary {
@@ -504,6 +512,10 @@
         <div class="field">
           <label>&nbsp;</label>
           <button id="btnGeo" class="secondary">Usa geolocalizzazione</button>
+        </div>
+        <div class="field">
+          <label>Bollettino manuale</label>
+          <a class="link-button" id="btnBollettinoTop" href="./bollettino.html" target="_blank" rel="noopener" title="Apri bollettino temporali (stessa cartella del sito)">Bollettino temporali</a>
         </div>
       </div>
     </section>
