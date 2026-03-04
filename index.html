@@ -1,315 +1,1028 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Inverno Meteorologico 2025-2026 - Udine Sant'Osvaldo</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background-color: #0d1b2a;
-            color: #e2e8f0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        h1, h2, h3 {
-            color: #a5b4fc;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .card {
-            background-color: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin-top: 20px;
-        }
-        .footer {
-            text-align: center;
-            font-size: 0.9em;
-            color: #94a3b8;
-            margin-top: 50px;
-        }
-        a {
-            color: #818cf8;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Meteo Live · Open-Meteo</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121b2f;
+      --panel-2: #16223c;
+      --text: #e9eefb;
+      --muted: #9fb0d4;
+      --accent: #61a8ff;
+      --accent-2: #6ee7b7;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: linear-gradient(180deg, #09101d 0%, #0b1220 100%); color: var(--text); font-family: Inter, Segoe UI, Roboto, Arial, sans-serif; }
+    body { padding: 16px; }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .header {
+      background: linear-gradient(180deg, rgba(97,168,255,0.10), rgba(97,168,255,0.03));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 8px;
+    }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(251,191,36,0.14);
+    }
+
+    .dot.ok { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(110,231,183,0.14); }
+    .dot.err { background: var(--danger); box-shadow: 0 0 0 4px rgba(248,113,113,0.14); }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .field {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      background: #0b1325;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+
+    .field button {
+      width: 100%;
+      background: linear-gradient(180deg, #2a65c8, #1d4da2);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .field button.secondary {
+      background: linear-gradient(180deg, #28405f, #1e314a);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px 0;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .panel .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 10px;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .current-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .metric .name {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .metric .value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .metric .mini {
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    thead th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: #16223c;
+    }
+
+    tbody td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      white-space: nowrap;
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    .chart-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .chart-title {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .chart {
+      width: 100%;
+      height: 220px;
+      display: block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));
+      border-radius: 10px;
+    }
+
+    .radar-wrap {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .radar-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      flex-wrap: wrap;
+    }
+
+    .radar-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .radar-toolbar button {
+      background: linear-gradient(180deg, #28405f, #1e314a);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .radar-stage {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: #0a1222;
+    }
+
+    .radar-map {
+      width: 100%;
+      height: 100%;
+      background: #08101f;
+    }
+
+    .leaflet-container {
+      background: #08101f;
+      font-family: inherit;
+    }
+
+    .radar-overlay-note {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      background: rgba(4,10,18,0.72);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      line-height: 1.2;
+      max-width: calc(100% - 16px);
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .legend .sw {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border-radius: 2px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 2px 4px 12px;
+      line-height: 1.35;
+    }
+
+    .error {
+      color: #ffd1d1;
+      background: rgba(248,113,113,0.10);
+      border: 1px solid rgba(248,113,113,0.28);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .span-8, .span-6, .span-4 { grid-column: span 12; }
+      .current-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Dashboard Inverno Meteorologico 2025-2026 - Udine Sant'Osvaldo (OSMER FVG)</h1>
-        
-        <div class="card">
-            <h2>Inverno 2025-2026 parziale (1 dicembre 2025 - 14 gennaio 2026)</h2>
-            <p>Dati aggiornati al 14 gennaio 2026 (45 giorni considerati).</p>
-            <ul>
-                <li><strong>Temperatura media parziale:</strong> 5.69 &deg;C</li>
-                <li><strong>Confronto con media storica inverno completo (1992-2025):</strong> 4.65 &deg;C (<span style="color:#fbbf24">anomalia +1.04 &deg;C</span> - finora piu mite della media)</li>
-                <li><strong>Precipitazioni cumulative:</strong> 18.5 mm</li>
-                <li><strong>Confronto con media storica inverno completo:</strong> ~296 mm (<span style="color:#60a5fa">estremamente secco - circa il 6% della norma</span>)</li>
-            </ul>
-            <p><strong>Dettagli mensili:</strong></p>
-            <ul>
-                <li>Dicembre 2025 (completo): temperatura media 7.18 &deg;C (<span style="color:#fbbf24">anomalia +2.4 &deg;C - mite</span>), precipitazioni 18.2 mm (molto secco)</li>
-                <li>Gennaio 2026 (1-14 gennaio, parziale): temperatura media 2.39 &deg;C (freddo rispetto alla norma storica gennaio ~4 &deg;C), precipitazioni 0.3 mm (estremamente secco)</li>
-            </ul>
-            <p><strong>Osservazione:</strong> L'inverno e iniziato con un dicembre mite e molto asciutto, seguito da un inizio gennaio decisamente freddo ma praticamente privo di precipitazioni.</p>
+  <div class="wrap">
+    <section class="header">
+      <div class="title-row">
+        <h1>Dashboard Meteo Live · aggiornamento automatico ogni 5 minuti</h1>
+        <div class="status-badges">
+          <span class="badge"><span id="statusDot" class="dot"></span><span id="statusText">In attesa primo aggiornamento</span></span>
+          <span class="badge">Ultimo update: <strong id="lastUpdate">-</strong></span>
+          <span class="badge">Prossimo update: <strong id="nextUpdate">-</strong></span>
         </div>
-        
-        <div class="card">
-            <h2>Temperature e precipitazioni giornaliere - Dicembre 2025</h2>
-            <div class="chart-container">
-                <canvas id="decChart"></canvas>
+      </div>
+      <div class="sub">Pagina autonoma lato browser. Sorgente dati principale: Open-Meteo. Polling ogni 300 secondi, senza backend.</div>
+
+      <div class="controls">
+        <div class="field">
+          <label for="citySelect">Località rapide FVG</label>
+          <select id="citySelect">
+            <option value="custom">Personalizzata (manuale)</option>
+            <option value="udine" selected>Udine</option>
+            <option value="gorizia">Gorizia</option>
+            <option value="pordenone">Pordenone</option>
+            <option value="trieste">Trieste</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="lat">Latitudine</label>
+          <input id="lat" type="number" step="0.0001" value="46.0711" />
+        </div>
+        <div class="field">
+          <label for="lon">Longitudine</label>
+          <input id="lon" type="number" step="0.0001" value="13.2346" />
+        </div>
+        <div class="field">
+          <label for="locName">Nome località (etichetta)</label>
+          <input id="locName" type="text" value="Friuli Venezia Giulia" />
+        </div>
+        <div class="field">
+          <label for="tz">Timezone</label>
+          <input id="tz" type="text" value="Europe/Rome" />
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnRefresh">Aggiorna adesso</button>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnGeo" class="secondary">Usa geolocalizzazione</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="errorBox" class="error"></div>
+
+    <section class="grid">
+      <div class="panel span-4">
+        <h2>Condizioni attuali</h2>
+        <div class="hint">Lettura corrente + info di supporto dal dataset orario.</div>
+        <div class="current-grid" id="currentGrid"></div>
+      </div>
+
+      <div class="panel span-8">
+        <h2>Evoluzione prossime 24 ore</h2>
+        <div class="hint">Grafici sintetici per temperatura, precipitazione e vento. Aggiornati senza ricaricare la pagina.</div>
+
+        <div class="chart-box" style="margin-bottom:10px;">
+          <div class="chart-title">Temperatura (°C) · 24h</div>
+          <svg id="tempChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="chart-box" style="margin-bottom:10px;">
+          <div class="chart-title">Precipitazione (mm/h) · 24h</div>
+          <svg id="rainChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Vento 10 m (km/h) · 24h</div>
+          <svg id="windChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Indicatori operativi rapidi</h2>
+        <div class="hint">Valutazione semplice, non sostituisce il nowcasting esperto. È una lettura rapida della situazione.</div>
+        <div class="current-grid" id="diagnosticsGrid"></div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Radar FVG live (Protezione Civile / DPC)</h2>
+        <div class="hint">Vista radar fissa sul Friuli Venezia Giulia tramite WMS. Aggiornamento sincronizzato con la dashboard e refresh manuale dedicato.</div>
+        <div class="radar-wrap">
+          <div class="radar-toolbar">
+            <div class="radar-meta">
+              <span>Layer: <strong id="radarLayerLabel">radar:vmi</strong></span>
+              <span>Frame radar: <strong id="radarFrameTime">ultimo disponibile</strong></span>
+              <span>Refresh radar: <strong id="radarLastUpdate">-</strong></span>
             </div>
+            <button id="btnRadarRefresh" type="button">Aggiorna radar</button>
+          </div>
+          <div class="radar-stage">
+            <div id="radarMap" class="radar-map" aria-label="Mappa radar FVG DPC"></div>
+            <div class="radar-overlay-note">Fonte radar: servizi DPC Radar (WMS). Vista centrata sul Friuli Venezia Giulia. Se il servizio non risponde, il resto della dashboard continua a funzionare.</div>
+          </div>
         </div>
-        
-        <div class="card">
-            <h2>Temperature e precipitazioni giornaliere - Gennaio 2026 (parziale 1-14 gennaio)</h2>
-            <div class="chart-container">
-                <canvas id="janChart"></canvas>
-            </div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Prossime 12 ore</h2>
+        <div class="hint">Estratto tabellare con timestamp locali e variabili chiave.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ora</th>
+                <th>T (°C)</th>
+                <th>Pioggia</th>
+                <th>Vento km/h</th>
+                <th>Raffica km/h</th>
+                <th>UR %</th>
+                <th>Nuvole %</th>
+              </tr>
+            </thead>
+            <tbody id="hoursBody"></tbody>
+          </table>
         </div>
-        
-        <div class="card">
-            <h2>Confronto storico inverni meteorologici (1992-1993 fino a 2024-2025)</h2>
-            <p>Media storica (33 inverni completi): <strong>4.65 &deg;C</strong> - Precipitazioni medie: <strong>~296 mm</strong></p>
-            <ul>
-                <li>Inverno piu freddo: 2001-2002 (3.1 &deg;C)</li>
-                <li>Inverno piu caldo: 2013-2014 (6.93 &deg;C)</li>
-                <li>Inverno piu secco: 1998-1999 (96 mm)</li>
-                <li>Inverno piu piovoso: 2013-2014 (973 mm)</li>
-                <li>Ultimo inverno completo (2024-2025): 6.02 &deg;C - 225 mm (relativamente mite e secco)</li>
-            </ul>
-            
-            <h3>Temperature medie invernali</h3>
-            <div class="chart-container">
-                <canvas id="tempChart"></canvas>
-            </div>
-            
-            <h3>Precipitazioni totali invernali</h3>
-            <div class="chart-container">
-                <canvas id="precChart"></canvas>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>Dati forniti da OSMER - Osservatorio Meteorologico Regionale dell'ARPA Friuli Venezia Giulia<br>
-            Stazione: Udine Sant'Osvaldo<br>
-            Fonte: <a href="https://www.osmer.fvg.it" target="_blank">https://www.osmer.fvg.it</a><br>
-            Il contenuto del sito OSMER e licenziato sotto <a href="https://creativecommons.org/licenses/by-sa/3.0/it/" target="_blank">Creative Commons Attribution-ShareAlike 3.0 Italia (CC BY-SA 3.0 IT)</a></p>
-            <p>Dashboard generata il 15 gennaio 2026 - Dati aggiornati al 14 gennaio 2026</p>
-        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      Nota tecnica: questa pagina usa l’endpoint forecast di Open-Meteo e interroga il browser ogni 5 minuti. Per uso continuativo conviene tenerla aperta su un PC o tablet. Per uso pubblico ad alto traffico, meglio introdurre caching server-side.
     </div>
+  </div>
 
-    <script>
-        // Dicembre 2025
-        const decCtx = document.getElementById('decChart').getContext('2d');
-        new Chart(decCtx, {
-            type: 'bar',
-            data: {
-                labels: ['1/12','2/12','3/12','4/12','5/12','6/12','7/12','8/12','9/12','10/12','11/12','12/12','13/12','14/12','15/12','16/12','17/12','18/12','19/12','20/12','21/12','22/12','23/12','24/12','25/12','26/12','27/12','28/12','29/12','30/12','31/12'],
-                datasets: [
-                    {
-                        label: 'Precipitazione (mm)',
-                        type: 'bar',
-                        data: [0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,3.2,0.2,3.8,0,0,0,0.2,0,0.2,0,0,0,0,0],
-                        backgroundColor: '#60a5fa',
-                        yAxisID: 'y-prec'
-                    },
-                    {
-                        label: 'T min (&deg;C)',
-                        type: 'line',
-                        data: [-0.8,-1.6,-4.1,-4.3,-2.6,-4.3,-5.9,-5.2,-7.7,-8.2,-8.2,-6.7,-5,-5.8,-6.5,-5.3,-3.4,-4.4,-5.6,0.2,-3.2,0.2,-1.9,-1,-2.8,-3.2,-4.2,-3.8,-6.1,-3.7,-4.4],
-                        borderColor: '#818cf8',
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'T max (&deg;C)',
-                        type: 'line',
-                        data: [8.3,8.2,7.9,7.5,9.2,6.4,5.7,5.5,1.7,1.5,5.2,7.8,11.9,9.4,11,7.9,9.3,3,7,4.4,5.3,8.9,11.2,12.9,8.9,1.9,6.1,11,6.2,8.7,11.1],
-                        borderColor: '#c4b5fd',
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        title: { display: true, text: 'Temperatura (&deg;C)', color: '#e2e8f0' },
-                        grid: { color: '#334155' },
-                        ticks: { color: '#e2e8f0' }
-                    },
-                    'y-prec': {
-                        position: 'right',
-                        title: { display: true, text: 'Precipitazione (mm)', color: '#e2e8f0' },
-                        grid: { drawOnChartArea: false },
-                        ticks: { color: '#e2e8f0' }
-                    },
-                    x: {
-                        ticks: { color: '#e2e8f0' }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { color: '#e2e8f0' } }
-                }
-            }
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    const REFRESH_MS = 5 * 60 * 1000;
+    let refreshTimer = null;
+    let countdownTimer = null;
+    let nextRefreshAt = null;
+    let radarMap = null;
+    let radarBaseLayer = null;
+    let radarLayer = null;
+
+    const el = {
+      citySelect: document.getElementById('citySelect'),
+      lat: document.getElementById('lat'),
+      lon: document.getElementById('lon'),
+      locName: document.getElementById('locName'),
+      tz: document.getElementById('tz'),
+      btnRefresh: document.getElementById('btnRefresh'),
+      btnGeo: document.getElementById('btnGeo'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      lastUpdate: document.getElementById('lastUpdate'),
+      nextUpdate: document.getElementById('nextUpdate'),
+      errorBox: document.getElementById('errorBox'),
+      currentGrid: document.getElementById('currentGrid'),
+      diagnosticsGrid: document.getElementById('diagnosticsGrid'),
+      hoursBody: document.getElementById('hoursBody'),
+      tempChart: document.getElementById('tempChart'),
+      rainChart: document.getElementById('rainChart'),
+      windChart: document.getElementById('windChart'),
+      radarMap: document.getElementById('radarMap'),
+      radarFrameTime: document.getElementById('radarFrameTime'),
+      radarLastUpdate: document.getElementById('radarLastUpdate'),
+      btnRadarRefresh: document.getElementById('btnRadarRefresh')
+    };
+
+    const RADAR_CONFIG = {
+      baseUrl: 'https://radar-geowebcache.protezionecivile.it/service/wms',
+      layer: 'radar:vmi',
+      version: '1.1.1',
+      // Bounding box Friuli Venezia Giulia (lat, lon) approx
+      fvgBoundsLatLng: [
+        [45.45, 12.15],
+        [46.75, 13.95]
+      ],
+      // fallback labels / timing
+      refreshEveryMs: 5 * 60 * 1000
+    };
+
+    const CITY_PRESETS = {
+      udine: { name: 'Udine', lat: 46.0711, lon: 13.2346 },
+      gorizia: { name: 'Gorizia', lat: 45.9409, lon: 13.6205 },
+      pordenone: { name: 'Pordenone', lat: 45.9564, lon: 12.6600 },
+      trieste: { name: 'Trieste', lat: 45.6495, lon: 13.7768 }
+    };
+
+    function applyCityPreset(key, triggerFetch = true) {
+      if (!CITY_PRESETS[key]) return;
+      const c = CITY_PRESETS[key];
+      el.lat.value = c.lat.toFixed(4);
+      el.lon.value = c.lon.toFixed(4);
+      el.locName.value = c.name;
+      if (triggerFetch) fetchAndRender(true);
+    }
+
+    function fmtDateTime(d) {
+      return new Intl.DateTimeFormat('it-IT', {
+        day: '2-digit', month: '2-digit', year: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).format(d);
+    }
+
+    function fmtHM(d) {
+      return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(d);
+    }
+
+    function safeNum(v, digits = 1) {
+      return (v === null || v === undefined || Number.isNaN(v)) ? 'n/d' : Number(v).toFixed(digits);
+    }
+
+    function toKmH(ms) {
+      return ms == null ? null : ms * 3.6;
+    }
+
+    function setStatus(kind, text) {
+      el.statusDot.className = 'dot' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
+      el.statusText.textContent = text;
+    }
+
+    function showError(msg) {
+      el.errorBox.style.display = 'block';
+      el.errorBox.textContent = msg;
+    }
+
+    function hideError() {
+      el.errorBox.style.display = 'none';
+      el.errorBox.textContent = '';
+    }
+
+    function scheduleNextRefresh() {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      nextRefreshAt = new Date(Date.now() + REFRESH_MS);
+      refreshTimer = setTimeout(() => fetchAndRender(false), REFRESH_MS);
+      updateCountdown();
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(updateCountdown, 1000);
+    }
+
+    function updateCountdown() {
+      if (!nextRefreshAt) {
+        el.nextUpdate.textContent = '-';
+        return;
+      }
+      const ms = nextRefreshAt - new Date();
+      if (ms <= 0) {
+        el.nextUpdate.textContent = 'ora';
+        return;
+      }
+      const total = Math.floor(ms / 1000);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      el.nextUpdate.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function metricCard(name, value, mini = '') {
+      return `
+        <div class="metric">
+          <div class="name">${name}</div>
+          <div class="value">${value}</div>
+          <div class="mini">${mini}</div>
+        </div>
+      `;
+    }
+
+    function getWeatherCodeLabel(code) {
+      const map = {
+        0: 'Sereno', 1: 'Poco nuvoloso', 2: 'Parz. nuvoloso', 3: 'Coperto',
+        45: 'Nebbia', 48: 'Brina/nebbia',
+        51: 'Pioviggine debole', 53: 'Pioviggine', 55: 'Pioviggine intensa',
+        56: 'Pioviggine gelida debole', 57: 'Pioviggine gelida intensa',
+        61: 'Pioggia debole', 63: 'Pioggia', 65: 'Pioggia intensa',
+        66: 'Pioggia gelida debole', 67: 'Pioggia gelida intensa',
+        71: 'Neve debole', 73: 'Neve', 75: 'Neve intensa', 77: 'Granuli neve',
+        80: 'Rovesci deboli', 81: 'Rovesci', 82: 'Rovesci intensi',
+        85: 'Rovesci neve deboli', 86: 'Rovesci neve intensi',
+        95: 'Temporale', 96: 'Temporale + grandine', 99: 'Temporale forte + grandine'
+      };
+      return map[code] ?? `Codice ${code}`;
+    }
+
+    function computeDiagnostics(current, next24) {
+      const rainMax = Math.max(...next24.precipitation.map(v => Number(v ?? 0)));
+      const windMax = Math.max(...next24.wind.map(v => Number(v ?? 0)));
+      const gustMax = Math.max(...next24.gust.map(v => Number(v ?? 0)));
+      const cloudMean = next24.cloud.reduce((a,b) => a + Number(b ?? 0), 0) / Math.max(1, next24.cloud.length);
+      const humidMean = next24.rh.reduce((a,b) => a + Number(b ?? 0), 0) / Math.max(1, next24.rh.length);
+
+      let convectiveWatch = 'Basso';
+      if (rainMax >= 4 || gustMax >= 45) convectiveWatch = 'Moderato';
+      if (rainMax >= 10 || gustMax >= 65) convectiveWatch = 'Alto';
+
+      let drying = 'Normale';
+      if (humidMean < 45 && rainMax < 0.2) drying = 'Secco';
+      if (humidMean < 35 && windMax > 20 && rainMax < 0.1) drying = 'Molto secco/ventoso';
+
+      let stability = 'Neutro';
+      if (cloudMean > 70 && rainMax < 0.3) stability = 'Stabile/coperto';
+      if (rainMax > 2 || gustMax > 40) stability = 'Dinamicità in aumento';
+
+      return [
+        { name: 'Rischio rovesci/temporali (proxy)', value: convectiveWatch, mini: `pioggia max ${safeNum(rainMax)} mm/h · raffica max ${safeNum(gustMax)} km/h` },
+        { name: 'Segnale ventilazione', value: `${safeNum(windMax)} km/h`, mini: `raffiche fino a ${safeNum(gustMax)} km/h` },
+        { name: 'Stato massa d’aria (proxy)', value: drying, mini: `UR media 24h ${safeNum(humidMean,0)}%` },
+        { name: 'Tendenza rapida', value: stability, mini: `nuvolosità media 24h ${safeNum(cloudMean,0)}%` }
+      ];
+    }
+
+    function renderCurrent(data, idxNow) {
+      const c = data.current;
+      const h = data.hourly;
+
+      const temp = c.temperature_2m;
+      const wind = c.wind_speed_10m;
+      const gust = c.wind_gusts_10m;
+      const code = c.weather_code;
+      const isDay = c.is_day;
+      const rh = h.relative_humidity_2m?.[idxNow];
+      const pressure = h.surface_pressure?.[idxNow];
+      const cloud = h.cloud_cover?.[idxNow];
+      const precip = h.precipitation?.[idxNow];
+
+      el.currentGrid.innerHTML = [
+        metricCard('Località', el.locName.value || 'Coordinate', `${Number(el.lat.value).toFixed(4)}, ${Number(el.lon.value).toFixed(4)}`),
+        metricCard('Stato', getWeatherCodeLabel(code), isDay ? 'Giorno' : 'Notte'),
+        metricCard('Temperatura', `${safeNum(temp)} °C`, `tempo API: ${c.time ?? 'n/d'}`),
+        metricCard('Vento 10 m', `${safeNum(wind)} km/h`, `raffica ${safeNum(gust)} km/h`),
+        metricCard('Umidità relativa', `${safeNum(rh,0)} %`, `dato orario associato`),
+        metricCard('Pressione suolo', `${safeNum(pressure)} hPa`, `dato orario associato`),
+        metricCard('Nuvolosità', `${safeNum(cloud,0)} %`, `copertura cloud`),
+        metricCard('Precipitazione', `${safeNum(precip)} mm/h`, `ora corrente`)
+      ].join('');
+    }
+
+    function renderDiagnostics(diags) {
+      el.diagnosticsGrid.innerHTML = diags.map(d => metricCard(d.name, d.value, d.mini)).join('');
+    }
+
+    function renderHoursTable(next12) {
+      el.hoursBody.innerHTML = next12.time.map((t, i) => {
+        return `
+          <tr>
+            <td>${t}</td>
+            <td>${safeNum(next12.temp[i])}</td>
+            <td>${safeNum(next12.rain[i])}</td>
+            <td>${safeNum(next12.wind[i], 0)}</td>
+            <td>${safeNum(next12.gust[i], 0)}</td>
+            <td>${safeNum(next12.rh[i], 0)}</td>
+            <td>${safeNum(next12.cloud[i], 0)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function drawLineChart(svg, values, labels, options = {}) {
+      const width = 800;
+      const height = 220;
+      const pad = { top: 14, right: 12, bottom: 28, left: 42 };
+      const w = width - pad.left - pad.right;
+      const h = height - pad.top - pad.bottom;
+
+      const nums = values.map(v => Number(v ?? 0));
+      let min = Math.min(...nums);
+      let max = Math.max(...nums);
+      if (!Number.isFinite(min) || !Number.isFinite(max)) { min = 0; max = 1; }
+      if (min === max) { max = min + 1; }
+
+      if (options.forceMin != null) min = Math.min(min, options.forceMin);
+      if (options.forceZero) min = Math.min(0, min);
+      if (options.forceZero && max < 1) max = 1;
+
+      const x = (i) => pad.left + (i * (w / Math.max(1, nums.length - 1)));
+      const y = (v) => pad.top + h - ((v - min) / (max - min)) * h;
+
+      const gridLines = 4;
+      let html = '';
+
+      for (let i = 0; i <= gridLines; i++) {
+        const yy = pad.top + (h * i / gridLines);
+        const val = (max - ((max - min) * i / gridLines));
+        html += `<line x1="${pad.left}" y1="${yy}" x2="${pad.left + w}" y2="${yy}" stroke="rgba(255,255,255,0.07)" stroke-width="1" />`;
+        html += `<text x="${pad.left - 6}" y="${yy + 4}" text-anchor="end" font-size="11" fill="#9fb0d4">${val.toFixed(options.yDigits ?? 0)}</text>`;
+      }
+
+      for (let i = 0; i < nums.length; i += Math.ceil(nums.length / 6)) {
+        const xx = x(i);
+        html += `<line x1="${xx}" y1="${pad.top}" x2="${xx}" y2="${pad.top + h}" stroke="rgba(255,255,255,0.04)" stroke-width="1" />`;
+        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${labels[i] ?? ''}</text>`;
+      }
+
+      const path = nums.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
+      const area = `M ${x(0)} ${pad.top + h} ` + nums.map((v, i) => `L ${x(i)} ${y(v)}`).join(' ') + ` L ${x(nums.length - 1)} ${pad.top + h} Z`;
+
+      const stroke = options.stroke || '#61a8ff';
+      const fill = options.fill || 'rgba(97,168,255,0.12)';
+
+      html += `<path d="${area}" fill="${fill}" stroke="none"></path>`;
+      html += `<path d="${path}" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>`;
+
+      const lastI = nums.length - 1;
+      if (lastI >= 0) {
+        html += `<circle cx="${x(lastI)}" cy="${y(nums[lastI])}" r="3.5" fill="${stroke}" />`;
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function drawBarChart(svg, values, labels, options = {}) {
+      const width = 800;
+      const height = 220;
+      const pad = { top: 14, right: 12, bottom: 28, left: 42 };
+      const w = width - pad.left - pad.right;
+      const h = height - pad.top - pad.bottom;
+
+      const nums = values.map(v => Number(v ?? 0));
+      let max = Math.max(...nums, 1);
+      if (!Number.isFinite(max) || max <= 0) max = 1;
+      const barW = w / Math.max(1, nums.length);
+
+      let html = '';
+      for (let i = 0; i <= 4; i++) {
+        const yy = pad.top + (h * i / 4);
+        const val = max - (max * i / 4);
+        html += `<line x1="${pad.left}" y1="${yy}" x2="${pad.left + w}" y2="${yy}" stroke="rgba(255,255,255,0.07)" stroke-width="1" />`;
+        html += `<text x="${pad.left - 6}" y="${yy + 4}" text-anchor="end" font-size="11" fill="#9fb0d4">${val.toFixed(options.yDigits ?? 1)}</text>`;
+      }
+
+      nums.forEach((v, i) => {
+        const bh = (v / max) * h;
+        const x = pad.left + i * barW + 1;
+        const y = pad.top + h - bh;
+        html += `<rect x="${x}" y="${y}" width="${Math.max(1, barW - 2)}" height="${Math.max(0, bh)}" rx="2" fill="${options.fill || 'rgba(110,231,183,0.55)'}" />`;
+      });
+
+      for (let i = 0; i < nums.length; i += Math.ceil(nums.length / 6)) {
+        const xx = pad.left + i * barW + barW / 2;
+        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${labels[i] ?? ''}</text>`;
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function parseHourSlices(data) {
+      const times = data.hourly.time || [];
+      const nowTime = data.current?.time;
+      let idxNow = Math.max(0, times.indexOf(nowTime));
+      if (idxNow < 0) {
+        const now = new Date();
+        idxNow = times.findIndex(t => new Date(t) >= now);
+        if (idxNow < 0) idxNow = 0;
+      }
+
+      const end24 = Math.min(times.length, idxNow + 24);
+      const end12 = Math.min(times.length, idxNow + 12);
+
+      const labelHours24 = times.slice(idxNow, end24).map(t => {
+        const d = new Date(t);
+        return fmtHM(d);
+      });
+
+      const next24 = {
+        time: labelHours24,
+        precipitation: (data.hourly.precipitation || []).slice(idxNow, end24),
+        wind: (data.hourly.wind_speed_10m || []).slice(idxNow, end24),
+        gust: (data.hourly.wind_gusts_10m || []).slice(idxNow, end24),
+        temp: (data.hourly.temperature_2m || []).slice(idxNow, end24),
+        rh: (data.hourly.relative_humidity_2m || []).slice(idxNow, end24),
+        cloud: (data.hourly.cloud_cover || []).slice(idxNow, end24)
+      };
+
+      const next12 = {
+        time: times.slice(idxNow, end12).map(t => fmtHM(new Date(t))),
+        temp: (data.hourly.temperature_2m || []).slice(idxNow, end12),
+        rain: (data.hourly.precipitation || []).slice(idxNow, end12),
+        wind: (data.hourly.wind_speed_10m || []).slice(idxNow, end12),
+        gust: (data.hourly.wind_gusts_10m || []).slice(idxNow, end12),
+        rh: (data.hourly.relative_humidity_2m || []).slice(idxNow, end12),
+        cloud: (data.hourly.cloud_cover || []).slice(idxNow, end12)
+      };
+
+      return { idxNow, next24, next12 };
+    }
+
+    function initRadarMapIfNeeded() {
+      if (radarMap || !el.radarMap || typeof L === 'undefined') return;
+
+      radarMap = L.map(el.radarMap, {
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true
+      });
+
+      radarBaseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(radarMap);
+
+      radarLayer = L.tileLayer.wms(RADAR_CONFIG.baseUrl, {
+        layers: RADAR_CONFIG.layer,
+        format: 'image/png',
+        transparent: true,
+        version: RADAR_CONFIG.version,
+        tiled: true,
+        uppercase: true,
+        opacity: 0.88,
+        attribution: 'Radar-DPC (DPC)'
+      }).addTo(radarMap);
+
+      radarMap.fitBounds(RADAR_CONFIG.fvgBoundsLatLng, { padding: [6, 6] });
+
+      radarLayer.on('loading', () => {
+        el.radarFrameTime.textContent = 'caricamento...';
+      });
+
+      radarLayer.on('load', () => {
+        el.radarFrameTime.textContent = 'ultimo disponibile';
+        el.radarLastUpdate.textContent = fmtDateTime(new Date());
+      });
+
+      radarLayer.on('tileerror', () => {
+        el.radarFrameTime.textContent = 'errore tiles';
+        el.radarLastUpdate.textContent = fmtDateTime(new Date()) + ' (tile error)';
+      });
+    }
+
+    function refreshRadarLayer() {
+      initRadarMapIfNeeded();
+      if (!radarLayer) return;
+      radarLayer.setParams({ _ts: Date.now() }, false);
+      radarLayer.redraw();
+    }
+
+    function buildUrl() {
+      const lat = Number(el.lat.value);
+      const lon = Number(el.lon.value);
+      const timezone = encodeURIComponent(el.tz.value || 'Europe/Rome');
+
+      const hourly = [
+        'temperature_2m',
+        'relative_humidity_2m',
+        'precipitation',
+        'cloud_cover',
+        'surface_pressure',
+        'wind_speed_10m',
+        'wind_gusts_10m',
+        'wind_direction_10m'
+      ].join(',');
+
+      const current = [
+        'temperature_2m',
+        'weather_code',
+        'is_day',
+        'wind_speed_10m',
+        'wind_gusts_10m',
+        'wind_direction_10m'
+      ].join(',');
+
+      return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${hourly}&current=${current}&forecast_days=2&timezone=${timezone}`;
+    }
+
+    async function fetchAndRender(manual = false) {
+      try {
+        if (manual) setStatus('pending', 'Aggiornamento manuale in corso');
+        else setStatus('pending', 'Aggiornamento automatico in corso');
+        hideError();
+
+        const url = buildUrl();
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!data || !data.hourly || !data.current) {
+          throw new Error('Risposta API incompleta');
+        }
+
+        const { idxNow, next24, next12 } = parseHourSlices(data);
+
+        renderCurrent(data, idxNow);
+        renderDiagnostics(computeDiagnostics(data.current, next24));
+        renderHoursTable(next12);
+
+        drawLineChart(el.tempChart, next24.temp, next24.time, {
+          stroke: '#61a8ff', fill: 'rgba(97,168,255,0.14)', yDigits: 0
+        });
+        drawBarChart(el.rainChart, next24.precipitation, next24.time, {
+          fill: 'rgba(110,231,183,0.58)', yDigits: 1
+        });
+        drawLineChart(el.windChart, next24.wind, next24.time, {
+          stroke: '#fbbf24', fill: 'rgba(251,191,36,0.14)', forceZero: true, yDigits: 0
         });
 
-        // Gennaio 2026 parziale
-        const janCtx = document.getElementById('janChart').getContext('2d');
-        new Chart(janCtx, {
-            type: 'bar',
-            data: {
-                labels: ['1/1','2/1','3/1','4/1','5/1','6/1','7/1','8/1','9/1','10/1','11/1','12/1','13/1','14/1'],
-                datasets: [
-                    {
-                        label: 'Precipitazione (mm)',
-                        type: 'bar',
-                        data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0.3],
-                        backgroundColor: '#60a5fa',
-                        yAxisID: 'y-prec'
-                    },
-                    {
-                        label: 'T min (&deg;C)',
-                        type: 'line',
-                        data: [-4.4,2,-1.8,1,0.8,-1.6,-6.2,-8.1,-1.2,-2.2,-2.3,-1.6,-1.5,2.9],
-                        borderColor: '#818cf8',
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'T max (&deg;C)',
-                        type: 'line',
-                        data: [4.7,4.7,9.7,7.6,4.3,3.3,4,4.3,4.2,11.1,5.9,7.1,8.2,7.3],
-                        borderColor: '#c4b5fd',
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        title: { display: true, text: 'Temperatura (&deg;C)', color: '#e2e8f0' },
-                        grid: { color: '#334155' },
-                        ticks: { color: '#e2e8f0' }
-                    },
-                    'y-prec': {
-                        position: 'right',
-                        title: { display: true, text: 'Precipitazione (mm)', color: '#e2e8f0' },
-                        grid: { drawOnChartArea: false },
-                        ticks: { color: '#e2e8f0' }
-                    },
-                    x: {
-                        ticks: { color: '#e2e8f0' }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { color: '#e2e8f0' } }
-                }
-            }
-        });
+        refreshRadarLayer();
 
-        // Grafici storici invariati (con &deg; per sicurezza)
-        const tempCtx = document.getElementById('tempChart').getContext('2d');
-        new Chart(tempCtx, {
-            type: 'bar',
-            data: {
-                labels: ['92-93','93-94','94-95','95-96','96-97','97-98','98-99','99-00','00-01','01-02','02-03','03-04','04-05','05-06','06-07','07-08','08-09','09-10','10-11','11-12','12-13','13-14','14-15','15-16','16-17','17-18','18-19','19-20','20-21','21-22','22-23','23-24','24-25'],
-                datasets: [{
-                    label: 'Temperatura media (&deg;C)',
-                    data: [4.00,5.03,4.60,3.90,4.67,5.27,3.20,3.17,5.90,3.10,3.97,4.07,3.90,3.50,6.90,4.70,4.43,3.83,3.80,3.43,3.90,6.93,5.60,5.17,3.73,4.33,4.37,6.03,5.27,4.63,5.97,6.27,6.02],
-                    backgroundColor: '#818cf8'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        title: { display: true, text: 'Temperatura media (&deg;C)', color: '#e2e8f0' },
-                        grid: { color: '#334155' },
-                        ticks: { color: '#e2e8f0' },
-                        suggestedMin: 2,
-                        suggestedMax: 8
-                    },
-                    x: {
-                        ticks: { color: '#e2e8f0', maxRotation: 90, minRotation: 90 }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    annotation: {
-                        annotations: {
-                            line1: {
-                                type: 'line',
-                                yMin: 4.65,
-                                yMax: 4.65,
-                                borderColor: '#f87171',
-                                borderWidth: 2,
-                                label: { content: 'Media storica 4.65 &deg;C', enabled: true, position: 'end' }
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        el.lastUpdate.textContent = fmtDateTime(new Date());
+        setStatus('ok', 'Dati aggiornati correttamente');
+        scheduleNextRefresh();
+      } catch (err) {
+        console.error(err);
+        setStatus('err', 'Errore aggiornamento dati');
+        showError(`Errore durante il recupero dati meteo: ${err.message}. Controlla connessione, coordinate e disponibilità API.`);
+        scheduleNextRefresh();
+      }
+    }
 
-        const precCtx = document.getElementById('precChart').getContext('2d');
-        new Chart(precCtx, {
-            type: 'bar',
-            data: {
-                labels: ['92-93','93-94','94-95','95-96','96-97','97-98','98-99','99-00','00-01','01-02','02-03','03-04','04-05','05-06','06-07','07-08','08-09','09-10','10-11','11-12','12-13','13-14','14-15','15-16','16-17','17-18','18-19','19-20','20-21','21-22','22-23','23-24','24-25'],
-                datasets: [{
-                    label: 'Precipitazioni totali (mm)',
-                    data: [156,274,225,428,212.4,244,96,123,350,128,139,446,158,183,338,262,616,555,406,130,293,973,157,407,158,296,146,197,610,151,240,439,225],
-                    backgroundColor: '#60a5fa'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        title: { display: true, text: 'Precipitazioni (mm)', color: '#e2e8f0' },
-                        grid: { color: '#334155' },
-                        ticks: { color: '#e2e8f0' }
-                    },
-                    x: {
-                        ticks: { color: '#e2e8f0', maxRotation: 90, minRotation: 90 }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    annotation: {
-                        annotations: {
-                            line1: {
-                                type: 'line',
-                                yMin: 296,
-                                yMax: 296,
-                                borderColor: '#f87171',
-                                borderWidth: 2,
-                                label: { content: 'Media storica ~296 mm', enabled: true, position: 'end' }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    </script>
+    el.btnRefresh.addEventListener('click', () => fetchAndRender(true));
+
+    el.citySelect.addEventListener('change', () => {
+      const key = el.citySelect.value;
+      if (key === 'custom') return;
+      applyCityPreset(key, true);
+    });
+
+    el.btnRadarRefresh.addEventListener('click', () => {
+      refreshRadarLayer();
+    });
+
+    el.btnGeo.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showError('Geolocalizzazione non supportata dal browser.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          el.citySelect.value = 'custom';
+          el.lat.value = pos.coords.latitude.toFixed(4);
+          el.lon.value = pos.coords.longitude.toFixed(4);
+          el.locName.value = 'Posizione attuale';
+          fetchAndRender(true);
+        },
+        (error) => {
+          showError(`Geolocalizzazione non disponibile: ${error.message}`);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      );
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Piccolo refresh quando torni sulla scheda, se è passato tempo.
+        if (!nextRefreshAt || (Date.now() - new Date(el.lastUpdate.textContent.replace(/(\d{2})\/(\d{2})\/(\d{2}),?\s?(\d{2}):(\d{2}):(\d{2})?/), Date.now())) > REFRESH_MS) {
+          // fallback: refresh manuale leggero
+        }
+      }
+    });
+
+    // Primo avvio con preset selezionato
+    if (el.citySelect.value !== 'custom') {
+      applyCityPreset(el.citySelect.value, false);
+    }
+    fetchAndRender(false);
+  </script>
 </body>
 </html>
