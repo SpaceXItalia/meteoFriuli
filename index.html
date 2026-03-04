@@ -260,6 +260,10 @@
       border-radius: 10px;
     }
 
+    .chart-box + .chart-box {
+      margin-top: 10px;
+    }
+
     .radar-wrap {
       background: var(--panel-2);
       border: 1px solid var(--border);
@@ -362,6 +366,90 @@
       display: none;
     }
 
+    .bol-wrap {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .bol-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      flex-wrap: wrap;
+    }
+
+    .bol-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bol-toolbar button,
+    .bol-toolbar a {
+      background: linear-gradient(180deg, #28405f, #1e314a);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .bol-toolbar .bol-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .bol-body {
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .bol-status {
+      color: var(--muted);
+      font-size: 0.82rem;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .bol-reliability {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(97,168,255,0.10);
+      border: 1px solid rgba(97,168,255,0.20);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+
+    .bol-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
     @media (max-width: 980px) {
       .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .span-8, .span-6, .span-4 { grid-column: span 12; }
@@ -375,7 +463,7 @@
       <div class="title-row">
         <h1>Dashboard Meteo Live · aggiornamento automatico ogni 5 minuti</h1>
         <div class="status-badges">
-          <span class="badge"><span id="statusDot" class="dot"></span><span id="statusText">In attesa primo aggiornamento</span></span>
+          <span class="badge" role="status" aria-live="polite" aria-atomic="true"><span id="statusDot" class="dot"></span><span id="statusText">In attesa primo aggiornamento</span></span>
           <span class="badge">Ultimo update: <strong id="lastUpdate">-</strong></span>
           <span class="badge">Prossimo update: <strong id="nextUpdate">-</strong></span>
         </div>
@@ -420,7 +508,7 @@
       </div>
     </section>
 
-    <div id="errorBox" class="error"></div>
+    <div id="errorBox" class="error" role="alert" aria-live="assertive"></div>
 
     <section class="grid">
       <div class="panel span-4">
@@ -433,12 +521,12 @@
         <h2>Evoluzione prossime 24 ore</h2>
         <div class="hint">Grafici sintetici per temperatura, precipitazione e vento. Aggiornati senza ricaricare la pagina.</div>
 
-        <div class="chart-box" style="margin-bottom:10px;">
+        <div class="chart-box">
           <div class="chart-title">Temperatura (°C) · 24h</div>
           <svg id="tempChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
         </div>
 
-        <div class="chart-box" style="margin-bottom:10px;">
+        <div class="chart-box">
           <div class="chart-title">Precipitazione (mm/h) · 24h</div>
           <svg id="rainChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
         </div>
@@ -494,6 +582,36 @@
           </table>
         </div>
       </div>
+          <div class="panel span-12">
+        <h2>Bollettino convettivo (estratto)</h2>
+        <div class="hint">Estrae automaticamente dal file <code>bollettino.html</code> (stessa cartella di index) la sezione “Fenomeni convettivi: indicatori (proxy)”.</div>
+        <div class="bol-wrap">
+          <div class="bol-toolbar">
+            <div class="bol-meta">
+              <span>Fonte: <strong id="bolSourceLabel">bollettino.html</strong></span>
+              <span>Stato: <strong id="bolStatusLabel">in attesa</strong></span>
+              <span>Lettura: <strong id="bolLastRead">-</strong></span>
+            </div>
+            <div class="bol-actions">
+              <button id="btnBollettinoRefresh" type="button">Aggiorna estratto</button>
+              <a id="bollettinoLink" href="./bollettino.html" target="_blank" rel="noopener">Apri bollettino</a>
+            </div>
+          </div>
+          <div class="bol-body">
+            <div id="bolStatusBox" class="bol-status" role="status" aria-live="polite">In attesa del primo caricamento del bollettino.</div>
+            <div id="bolReliability"></div>
+            <div id="bolTableWrap" class="table-wrap" style="display:none;">
+              <table>
+                <thead>
+                  <tr id="bolTableHeadRow"></tr>
+                </thead>
+                <tbody id="bolTableBody"></tbody>
+              </table>
+            </div>
+            <div id="bolNote" class="bol-note" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <div class="footer">
@@ -507,6 +625,8 @@
     crossorigin=""
   ></script>
   <script>
+  (() => {
+    document.addEventListener('DOMContentLoaded', () => {
     const REFRESH_MS = 5 * 60 * 1000;
     let refreshTimer = null;
     let countdownTimer = null;
@@ -514,6 +634,11 @@
     let radarMap = null;
     let radarBaseLayer = null;
     let radarLayer = null;
+    let lastFetchEpoch = null;
+    let lastRadarRefreshEpoch = null;
+    let isFetching = false;
+    let isFetchingBollettino = false;
+    let lastBollettinoFetchEpoch = null;
 
     const el = {
       citySelect: document.getElementById('citySelect'),
@@ -537,7 +662,24 @@
       radarMap: document.getElementById('radarMap'),
       radarFrameTime: document.getElementById('radarFrameTime'),
       radarLastUpdate: document.getElementById('radarLastUpdate'),
-      btnRadarRefresh: document.getElementById('btnRadarRefresh')
+      btnRadarRefresh: document.getElementById('btnRadarRefresh'),
+      btnBollettinoRefresh: document.getElementById('btnBollettinoRefresh'),
+      bollettinoLink: document.getElementById('bollettinoLink'),
+      bolSourceLabel: document.getElementById('bolSourceLabel'),
+      bolStatusLabel: document.getElementById('bolStatusLabel'),
+      bolLastRead: document.getElementById('bolLastRead'),
+      bolStatusBox: document.getElementById('bolStatusBox'),
+      bolReliability: document.getElementById('bolReliability'),
+      bolTableWrap: document.getElementById('bolTableWrap'),
+      bolTableHeadRow: document.getElementById('bolTableHeadRow'),
+      bolTableBody: document.getElementById('bolTableBody'),
+      bolNote: document.getElementById('bolNote')
+    };
+
+    const BOLLETTINO_CONFIG = {
+      url: './bollettino.html',
+      sectionTitle: 'Fenomeni convettivi: indicatori (proxy)',
+      notePrefix: 'Gli score sono una mappatura euristica'
     };
 
     const RADAR_CONFIG = {
@@ -567,6 +709,25 @@
       el.lon.value = c.lon.toFixed(4);
       el.locName.value = c.name;
       if (triggerFetch) fetchAndRender(true);
+    }
+
+    function esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function arrMax(values) {
+      const nums = Array.isArray(values) ? values.map(v => Number(v)).filter(Number.isFinite) : [];
+      return nums.length ? Math.max(...nums) : 0;
+    }
+
+    function arrMean(values) {
+      const nums = Array.isArray(values) ? values.map(v => Number(v)).filter(Number.isFinite) : [];
+      return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
     }
 
     function fmtDateTime(d) {
@@ -603,6 +764,189 @@
       el.errorBox.textContent = '';
     }
 
+    function cleanWs(value) {
+      return String(value == null ? '' : value)
+        .replaceAll('
+', ' ')
+        .replaceAll('	', ' ')
+        .replaceAll('
+', ' ')
+        .split(' ')
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    }
+
+    function normalizeText(value) {
+      return cleanWs(value).toLowerCase();
+    }
+
+    function setBollettinoStatus(label, boxText) {
+      if (el.bolStatusLabel) el.bolStatusLabel.textContent = label;
+      if (el.bolStatusBox) el.bolStatusBox.textContent = boxText;
+    }
+
+    function clearBollettinoExtract() {
+      if (el.bolReliability) el.bolReliability.innerHTML = '';
+      if (el.bolTableHeadRow) el.bolTableHeadRow.innerHTML = '';
+      if (el.bolTableBody) el.bolTableBody.innerHTML = '';
+      if (el.bolTableWrap) el.bolTableWrap.style.display = 'none';
+      if (el.bolNote) {
+        el.bolNote.style.display = 'none';
+        el.bolNote.textContent = '';
+      }
+    }
+
+    function renderBollettinoExtract(parsed) {
+      clearBollettinoExtract();
+
+      if (parsed && parsed.reliability) {
+        el.bolReliability.innerHTML = '<div class="bol-reliability"><span>Affidabilità</span><strong>' + esc(parsed.reliability) + '</strong></div>';
+      }
+
+      const headers = Array.isArray(parsed && parsed.headers) ? parsed.headers : [];
+      const rows = Array.isArray(parsed && parsed.rows) ? parsed.rows : [];
+
+      if (headers.length && rows.length) {
+        el.bolTableHeadRow.innerHTML = headers.map(function(h) { return '<th>' + esc(h) + '</th>'; }).join('');
+        el.bolTableBody.innerHTML = rows.map(function(row) {
+          const tds = row.map(function(cell) { return '<td>' + esc(cell) + '</td>'; }).join('');
+          return '<tr>' + tds + '</tr>';
+        }).join('');
+        el.bolTableWrap.style.display = '';
+      }
+
+      if (parsed && parsed.note) {
+        el.bolNote.textContent = parsed.note;
+        el.bolNote.style.display = '';
+      }
+    }
+
+    function findBollettinoSectionAnchor(doc) {
+      const target = normalizeText(BOLLETTINO_CONFIG.sectionTitle);
+      const nodes = Array.from(doc.querySelectorAll('h1,h2,h3,h4,h5,h6,summary,caption,p,div,strong'));
+      for (const n of nodes) {
+        if (normalizeText(n.textContent) === target) return n;
+      }
+      return null;
+    }
+
+    function findBollettinoTable(doc, anchor) {
+      const tables = Array.from(doc.querySelectorAll('table'));
+      if (!anchor) return tables[0] || null;
+      for (const tbl of tables) {
+        const pos = anchor.compareDocumentPosition(tbl);
+        if (Boolean(pos & Node.DOCUMENT_POSITION_FOLLOWING)) return tbl;
+      }
+      return null;
+    }
+
+    function parseBollettinoTable(table) {
+      if (!table) return { headers: [], rows: [], reliability: '' };
+      let headers = Array.from(table.querySelectorAll('thead th')).map(function(th) { return cleanWs(th.textContent); }).filter(Boolean);
+      let rowsOut = [];
+      let reliability = '';
+      let rowEls = Array.from(table.querySelectorAll('tbody tr'));
+      if (!rowEls.length) rowEls = Array.from(table.querySelectorAll('tr'));
+
+      rowEls.forEach(function(tr, idx) {
+        const cells = Array.from(tr.querySelectorAll('th,td')).map(function(td) { return cleanWs(td.textContent); }).filter(Boolean);
+        if (!cells.length) return;
+        if (!headers.length && idx === 0 && tr.querySelector('th')) {
+          headers = cells;
+          return;
+        }
+        const first = normalizeText(cells[0]);
+        if (first === 'affidabilità' || first === 'affidabilita') {
+          reliability = cleanWs(cells.slice(1).join(' '));
+          return;
+        }
+        rowsOut.push(cells);
+      });
+
+      return { headers: headers, rows: rowsOut, reliability: reliability };
+    }
+
+    function extractBollettinoNote(doc, anchor, table) {
+      const targetPrefix = normalizeText(BOLLETTINO_CONFIG.notePrefix);
+      const candidates = Array.from(doc.querySelectorAll('p,div,li'));
+      for (const n of candidates) {
+        const txt = cleanWs(n.textContent);
+        const norm = normalizeText(txt);
+        if (!txt) continue;
+        if (norm.startsWith(targetPrefix) || norm.includes('non rappresentano probabilità reali') || norm.includes('non rappresentano probabilita reali')) {
+          return txt;
+        }
+      }
+      return '';
+    }
+
+    function extractBollettinoReliability(doc) {
+      const nodes = Array.from(doc.querySelectorAll('p,div,li,td,strong'));
+      for (const n of nodes) {
+        const txt = cleanWs(n.textContent);
+        const norm = normalizeText(txt);
+        if (!txt) continue;
+        if (norm.startsWith('affidabilità ') || norm.startsWith('affidabilita ')) {
+          const parts = txt.split(' ');
+          if (parts.length > 1) return cleanWs(parts.slice(1).join(' '));
+        }
+      }
+      return '';
+    }
+
+    function parseBollettinoConvectiveExtract(htmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+      const anchor = findBollettinoSectionAnchor(doc);
+      if (!anchor) throw new Error('Sezione proxy convettivi non trovata');
+      const table = findBollettinoTable(doc, anchor);
+      if (!table) throw new Error('Tabella proxy convettivi non trovata');
+      const parsed = parseBollettinoTable(table);
+      parsed.note = extractBollettinoNote(doc, anchor, table);
+      if (!parsed.reliability) parsed.reliability = extractBollettinoReliability(doc);
+      if (!parsed.headers.length || !parsed.rows.length) {
+        throw new Error('Tabella proxy convettivi vuota o non riconosciuta');
+      }
+      return parsed;
+    }
+
+    async function refreshBollettinoExtract(manual) {
+      if (manual === undefined) manual = false;
+      if (isFetchingBollettino) return;
+      isFetchingBollettino = true;
+      if (el.btnBollettinoRefresh) {
+        el.btnBollettinoRefresh.disabled = true;
+        el.btnBollettinoRefresh.setAttribute('aria-busy', 'true');
+      }
+
+      try {
+        setBollettinoStatus('caricamento', manual ? 'Aggiornamento manuale estratto bollettino in corso...' : 'Lettura automatica del bollettino in corso...');
+        const url = BOLLETTINO_CONFIG.url + '?_ts=' + Date.now();
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const htmlText = await res.text();
+        const parsed = parseBollettinoConvectiveExtract(htmlText);
+        renderBollettinoExtract(parsed);
+        lastBollettinoFetchEpoch = Date.now();
+        if (el.bolSourceLabel) el.bolSourceLabel.textContent = BOLLETTINO_CONFIG.url;
+        if (el.bolLastRead) el.bolLastRead.textContent = fmtDateTime(new Date(lastBollettinoFetchEpoch));
+        setBollettinoStatus('ok', 'Estratto proxy convettivi aggiornato dal bollettino locale.');
+      } catch (err) {
+        console.error(err);
+        lastBollettinoFetchEpoch = Date.now();
+        if (el.bolLastRead) el.bolLastRead.textContent = fmtDateTime(new Date(lastBollettinoFetchEpoch));
+        clearBollettinoExtract();
+        setBollettinoStatus('errore', 'Estratto bollettino non disponibile: ' + (err && err.message ? err.message : 'errore sconosciuto') + '.');
+      } finally {
+        isFetchingBollettino = false;
+        if (el.btnBollettinoRefresh) {
+          el.btnBollettinoRefresh.disabled = false;
+          el.btnBollettinoRefresh.removeAttribute('aria-busy');
+        }
+      }
+    }
+
     function scheduleNextRefresh() {
       if (refreshTimer) clearTimeout(refreshTimer);
       nextRefreshAt = new Date(Date.now() + REFRESH_MS);
@@ -631,9 +975,9 @@
     function metricCard(name, value, mini = '') {
       return `
         <div class="metric">
-          <div class="name">${name}</div>
-          <div class="value">${value}</div>
-          <div class="mini">${mini}</div>
+          <div class="name">${esc(name)}</div>
+          <div class="value">${esc(value)}</div>
+          <div class="mini">${esc(mini)}</div>
         </div>
       `;
     }
@@ -655,11 +999,11 @@
     }
 
     function computeDiagnostics(current, next24) {
-      const rainMax = Math.max(...next24.precipitation.map(v => Number(v ?? 0)));
-      const windMax = Math.max(...next24.wind.map(v => Number(v ?? 0)));
-      const gustMax = Math.max(...next24.gust.map(v => Number(v ?? 0)));
-      const cloudMean = next24.cloud.reduce((a,b) => a + Number(b ?? 0), 0) / Math.max(1, next24.cloud.length);
-      const humidMean = next24.rh.reduce((a,b) => a + Number(b ?? 0), 0) / Math.max(1, next24.rh.length);
+      const rainMax = arrMax(next24?.precipitation);
+      const windMax = arrMax(next24?.wind);
+      const gustMax = arrMax(next24?.gust);
+      const cloudMean = arrMean(next24?.cloud);
+      const humidMean = arrMean(next24?.rh);
 
       let convectiveWatch = 'Basso';
       if (rainMax >= 4 || gustMax >= 45) convectiveWatch = 'Moderato';
@@ -712,16 +1056,16 @@
     }
 
     function renderHoursTable(next12) {
-      el.hoursBody.innerHTML = next12.time.map((t, i) => {
+      el.hoursBody.innerHTML = (next12?.time || []).map((t, i) => {
         return `
           <tr>
-            <td>${t}</td>
-            <td>${safeNum(next12.temp[i])}</td>
-            <td>${safeNum(next12.rain[i])}</td>
-            <td>${safeNum(next12.wind[i], 0)}</td>
-            <td>${safeNum(next12.gust[i], 0)}</td>
-            <td>${safeNum(next12.rh[i], 0)}</td>
-            <td>${safeNum(next12.cloud[i], 0)}</td>
+            <td>${esc(t)}</td>
+            <td>${esc(safeNum(next12.temp?.[i]))}</td>
+            <td>${esc(safeNum(next12.rain?.[i]))}</td>
+            <td>${esc(safeNum(next12.wind?.[i], 0))}</td>
+            <td>${esc(safeNum(next12.gust?.[i], 0))}</td>
+            <td>${esc(safeNum(next12.rh?.[i], 0))}</td>
+            <td>${esc(safeNum(next12.cloud?.[i], 0))}</td>
           </tr>
         `;
       }).join('');
@@ -760,7 +1104,7 @@
       for (let i = 0; i < nums.length; i += Math.ceil(nums.length / 6)) {
         const xx = x(i);
         html += `<line x1="${xx}" y1="${pad.top}" x2="${xx}" y2="${pad.top + h}" stroke="rgba(255,255,255,0.04)" stroke-width="1" />`;
-        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${labels[i] ?? ''}</text>`;
+        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${esc(labels[i] ?? '')}</text>`;
       }
 
       const path = nums.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
@@ -809,7 +1153,7 @@
 
       for (let i = 0; i < nums.length; i += Math.ceil(nums.length / 6)) {
         const xx = pad.left + i * barW + barW / 2;
-        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${labels[i] ?? ''}</text>`;
+        html += `<text x="${xx}" y="${height - 8}" text-anchor="middle" font-size="11" fill="#9fb0d4">${esc(labels[i] ?? '')}</text>`;
       }
 
       svg.innerHTML = html;
@@ -888,13 +1232,15 @@
       });
 
       radarLayer.on('load', () => {
+        lastRadarRefreshEpoch = Date.now();
         el.radarFrameTime.textContent = 'ultimo disponibile';
-        el.radarLastUpdate.textContent = fmtDateTime(new Date());
+        el.radarLastUpdate.textContent = fmtDateTime(new Date(lastRadarRefreshEpoch));
       });
 
       radarLayer.on('tileerror', () => {
+        lastRadarRefreshEpoch = Date.now();
         el.radarFrameTime.textContent = 'errore tiles';
-        el.radarLastUpdate.textContent = fmtDateTime(new Date()) + ' (tile error)';
+        el.radarLastUpdate.textContent = fmtDateTime(new Date(lastRadarRefreshEpoch)) + ' (tile error)';
       });
     }
 
@@ -934,6 +1280,11 @@
     }
 
     async function fetchAndRender(manual = false) {
+      if (isFetching) return;
+      isFetching = true;
+      el.btnRefresh.disabled = true;
+      el.btnRefresh.setAttribute('aria-busy', 'true');
+
       try {
         if (manual) setStatus('pending', 'Aggiornamento manuale in corso');
         else setStatus('pending', 'Aggiornamento automatico in corso');
@@ -942,10 +1293,17 @@
         const url = buildUrl();
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
 
-        if (!data || !data.hourly || !data.current) {
-          throw new Error('Risposta API incompleta');
+        const data = await res.json();
+        const isValid = data
+          && typeof data === 'object'
+          && data.current && typeof data.current === 'object'
+          && data.hourly && typeof data.hourly === 'object'
+          && Array.isArray(data.hourly.time)
+          && data.hourly.time.length > 0;
+
+        if (!isValid) {
+          throw new Error('Risposta API incompleta o non valida');
         }
 
         const { idxNow, next24, next12 } = parseHourSlices(data);
@@ -954,25 +1312,30 @@
         renderDiagnostics(computeDiagnostics(data.current, next24));
         renderHoursTable(next12);
 
-        drawLineChart(el.tempChart, next24.temp, next24.time, {
+        drawLineChart(el.tempChart, next24.temp || [], next24.time || [], {
           stroke: '#61a8ff', fill: 'rgba(97,168,255,0.14)', yDigits: 0
         });
-        drawBarChart(el.rainChart, next24.precipitation, next24.time, {
+        drawBarChart(el.rainChart, next24.precipitation || [], next24.time || [], {
           fill: 'rgba(110,231,183,0.58)', yDigits: 1
         });
-        drawLineChart(el.windChart, next24.wind, next24.time, {
+        drawLineChart(el.windChart, next24.wind || [], next24.time || [], {
           stroke: '#fbbf24', fill: 'rgba(251,191,36,0.14)', forceZero: true, yDigits: 0
         });
 
         refreshRadarLayer();
+        refreshBollettinoExtract(false);
 
-        el.lastUpdate.textContent = fmtDateTime(new Date());
+        lastFetchEpoch = Date.now();
+        el.lastUpdate.textContent = fmtDateTime(new Date(lastFetchEpoch));
         setStatus('ok', 'Dati aggiornati correttamente');
-        scheduleNextRefresh();
       } catch (err) {
         console.error(err);
         setStatus('err', 'Errore aggiornamento dati');
-        showError(`Errore durante il recupero dati meteo: ${err.message}. Controlla connessione, coordinate e disponibilità API.`);
+        showError(`Errore durante il recupero dati meteo: ${err?.message || 'errore sconosciuto'}. Controlla connessione, coordinate e disponibilità API.`);
+      } finally {
+        isFetching = false;
+        el.btnRefresh.disabled = false;
+        el.btnRefresh.removeAttribute('aria-busy');
         scheduleNextRefresh();
       }
     }
@@ -987,6 +1350,10 @@
 
     el.btnRadarRefresh.addEventListener('click', () => {
       refreshRadarLayer();
+    });
+
+    el.btnBollettinoRefresh.addEventListener('click', () => {
+      refreshBollettinoExtract(true);
     });
 
     el.btnGeo.addEventListener('click', () => {
@@ -1010,19 +1377,24 @@
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        // Piccolo refresh quando torni sulla scheda, se è passato tempo.
-        if (!nextRefreshAt || (Date.now() - new Date(el.lastUpdate.textContent.replace(/(\d{2})\/(\d{2})\/(\d{2}),?\s?(\d{2}):(\d{2}):(\d{2})?/), Date.now())) > REFRESH_MS) {
-          // fallback: refresh manuale leggero
-        }
+      if (document.hidden) return;
+      if (isFetching) return;
+      const stale = !lastFetchEpoch || (Date.now() - lastFetchEpoch > REFRESH_MS);
+      if (stale) {
+        fetchAndRender(false);
       }
     });
+
+    if (el.bollettinoLink) el.bollettinoLink.setAttribute('href', BOLLETTINO_CONFIG.url);
+    if (el.bolSourceLabel) el.bolSourceLabel.textContent = BOLLETTINO_CONFIG.url;
 
     // Primo avvio con preset selezionato
     if (el.citySelect.value !== 'custom') {
       applyCityPreset(el.citySelect.value, false);
     }
     fetchAndRender(false);
+    });
+  })();
   </script>
 </body>
 </html>
