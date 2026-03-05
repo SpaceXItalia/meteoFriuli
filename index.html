@@ -6,6 +6,7 @@
   <title>Dashboard Meteo Live · Open-Meteo (FIXED)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
+
     :root {
       --bg: #0b1220;
       --panel: #121b2f;
@@ -17,163 +18,384 @@
       --warn: #fbbf24;
       --danger: #f87171;
       --border: rgba(255,255,255,0.08);
-      --shadow: 0 8px 24px rgba(0,0,0,0.25);
+      --shadow: 0 8px 22px rgba(0,0,0,0.22);
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: linear-gradient(180deg, #09101d 0%, #0b1220 100%); color: var(--text); font-family: Inter, Segoe UI, Roboto, Arial, sans-serif; }
-    body { padding: 16px; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(180deg, #09101d 0%, #0b1220 100%);
+      color: var(--text);
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    body { padding: 12px; }
 
-    .wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
+    .wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 12px; }
+
     .header {
-      background: linear-gradient(180deg, rgba(97,168,255,0.10), rgba(97,168,255,0.03));
+      background: linear-gradient(180deg, rgba(97,168,255,0.09), rgba(97,168,255,0.025));
       border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px 18px;
+      border-radius: 14px;
+      padding: 12px 14px;
       box-shadow: var(--shadow);
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
-    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-    h1 { font-size: 1.15rem; margin: 0; letter-spacing: 0.2px; }
-    .sub { color: var(--muted); font-size: 0.92rem; line-height: 1.35; }
+    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    h1 { font-size: 1.02rem; margin: 0; letter-spacing: 0.1px; line-height: 1.2; }
+    .sub { color: var(--muted); font-size: 0.83rem; line-height: 1.28; }
 
-    .status-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .status-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .badge {
-      background: rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.035);
       border: 1px solid var(--border);
       color: var(--muted);
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.78rem;
+      padding: 4px 8px;
+      font-size: 0.74rem;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       white-space: nowrap;
+      min-height: 28px;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,0.14); }
     .dot.ok { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(110,231,183,0.14); }
     .dot.err { background: var(--danger); box-shadow: 0 0 0 4px rgba(248,113,113,0.14); }
 
-    .controls { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; margin-top: 4px; }
+    
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 2px;
+      align-items: stretch;
+    }
+    /* Layout più leggibile: niente pulsanti “a fisarmonica” */
+    .controls .field:nth-child(1) { grid-column: span 3; }
+    .controls .field:nth-child(2) { grid-column: span 2; }
+    .controls .field:nth-child(3) { grid-column: span 2; }
+    .controls .field:nth-child(4) { grid-column: span 3; }
+    .controls .field:nth-child(5) { grid-column: span 2; }
+    .controls .field:nth-child(6) { grid-column: span 4; }
+    .controls .field:nth-child(7) { grid-column: span 4; }
+    .controls .field:nth-child(8) { grid-column: span 4; }
+
     .field {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 8px;
       display: grid;
-      gap: 6px;
+      gap: 5px;
       align-content: start;
+      min-width: 0;
     }
-    .field label { font-size: 0.78rem; color: var(--muted); }
+    .field label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.1;
+      min-height: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .field input, .field select {
-      width: 100%; background: #0b1325; border: 1px solid var(--border); border-radius: 8px;
-      color: var(--text); padding: 8px 10px; font-size: 0.9rem;
+      width: 100%;
+      min-width: 0;
+      background: #0b1325;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 7px 8px;
+      font-size: 0.84rem;
+      line-height: 1.2;
     }
+    
     .field button, .field .link-button {
-      width: 100%; background: linear-gradient(180deg, #2a65c8, #1d4da2);
+      width: 100%;
+      min-width: 0;
+      background: linear-gradient(180deg, #2a65c8, #1d4da2);
       border: 1px solid rgba(255,255,255,0.12);
-      color: #fff; border-radius: 10px; padding: 10px 12px; font-weight: 600; cursor: pointer;
-      text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 9px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      line-height: 1.15;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 34px;
     }
+
     .field button.secondary { background: linear-gradient(180deg, #28405f, #1e314a); }
 
-    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
     .panel {
       background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: 14px;
       box-shadow: var(--shadow);
-      padding: 14px;
+      padding: 11px;
       min-width: 0;
     }
-    .panel h2 { margin: 0 0 10px 0; font-size: 0.98rem; font-weight: 700; color: var(--text); }
-    .panel .hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 10px; }
+    .panel h2 { margin: 0 0 7px 0; font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .panel .hint { color: var(--muted); font-size: 0.75rem; line-height: 1.25; margin-bottom: 8px; }
 
     .span-4 { grid-column: span 4; }
     .span-6 { grid-column: span 6; }
     .span-8 { grid-column: span 8; }
     .span-12 { grid-column: span 12; }
+    .stack { display: grid; gap: 12px; min-width: 0; }
 
-    .current-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-    .metric { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: grid; gap: 6px; }
-    .metric .name { color: var(--muted); font-size: 0.78rem; }
-    .metric .value { font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
-    .metric .mini { color: var(--muted); font-size: 0.75rem; }
+    .current-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .metric .name { color: var(--muted); font-size: 0.72rem; line-height: 1.15; }
+    .metric .value {
+      font-size: 1.02rem;
+      font-weight: 700;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+    .metric .mini { color: var(--muted); font-size: 0.7rem; line-height: 1.15; }
 
-    .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-    thead th { text-align: left; color: var(--muted); font-weight: 600; padding: 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #16223c; }
-    tbody td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-2);
+      max-width: 100%;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    thead th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: #16223c;
+    }
+    tbody td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
     tbody tr:hover { background: rgba(255,255,255,0.03); }
 
-    .chart-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
-    .chart-box + .chart-box { margin-top: 10px; }
-    .chart-title { font-size: 0.84rem; color: var(--muted); margin-bottom: 8px; }
-    .chart { width: 100%; height: 220px; display: block; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0)); border-radius: 10px; }
-
-    .radar-wrap, .bol-wrap { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-    .radar-toolbar, .bol-toolbar {
-      display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px;
-      border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); flex-wrap: wrap;
+    .chart-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
     }
-    .radar-meta, .bol-meta { font-size: 0.78rem; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
-    .radar-toolbar button, .bol-toolbar button, .bol-toolbar a {
+    .chart-box + .chart-box { margin-top: 8px; }
+    .chart-title { font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; line-height: 1.2; }
+    .chart {
+      width: 100%;
+      height: 188px;
+      display: block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));
+      border-radius: 8px;
+    }
+
+    .radar-wrap, .bol-wrap, .lightning-wrap {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .radar-toolbar, .bol-toolbar, .lightning-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      flex-wrap: wrap;
+    }
+    .radar-meta, .bol-meta, .lightning-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+    .radar-toolbar button, .bol-toolbar button, .bol-toolbar a, .lightning-toolbar a {
       background: linear-gradient(180deg, #28405f, #1e314a);
       border: 1px solid rgba(255,255,255,0.12);
-      color: white; border-radius: 8px; padding: 6px 10px; font-size: 0.78rem; cursor: pointer;
-      text-decoration: none; display: inline-flex; align-items: center;
+      color: white;
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 0.74rem;
+      line-height: 1.1;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
     }
-    .bol-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .bol-actions { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
 
-    .radar-stage { position: relative; aspect-ratio: 16 / 10; background: #0a1222; }
-    .radar-map { width: 100%; height: 100%; background: #08101f; }
+    .radar-stage { position: relative; aspect-ratio: 16 / 9; background: #0a1222; }
+    
+    .lightning-stage { position: relative; aspect-ratio: 16 / 9; background: #0a1222; }
+    .lightning-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .lightning-overlay-note {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      padding: 4px 7px;
+      background: rgba(0,0,0,0.42);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.88);
+      pointer-events: none;
+      max-width: calc(100% - 16px);
+      line-height: 1.2;
+    }
+.radar-map { width: 100%; height: 100%; background: #08101f; }
     .leaflet-container { background: #08101f; font-family: inherit; }
     .radar-overlay-note {
-      position: absolute; left: 8px; bottom: 8px; background: rgba(4,10,18,0.72); border: 1px solid rgba(255,255,255,0.12);
-      color: var(--muted); padding: 6px 8px; border-radius: 8px; font-size: 0.72rem; line-height: 1.2; max-width: calc(100% - 16px);
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      background: rgba(4,10,18,0.72);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      padding: 4px 6px;
+      border-radius: 7px;
+      font-size: 0.66rem;
+      line-height: 1.15;
+      max-width: calc(100% - 12px);
     }
 
-    .bol-body { padding: 10px; display: grid; gap: 10px; }
+    .bol-body { padding: 8px; display: grid; gap: 8px; }
     .bol-status {
-      color: var(--muted); font-size: 0.82rem; padding: 8px 10px; border-radius: 10px;
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.2;
+      padding: 7px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
     }
     .bol-reliability {
-      display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 6px 10px; border-radius: 999px;
-      background: rgba(97,168,255,0.10); border: 1px solid rgba(97,168,255,0.20); color: var(--text); font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(97,168,255,0.10);
+      border: 1px solid rgba(97,168,255,0.20);
+      color: var(--text);
+      font-size: 0.75rem;
     }
     .bol-note {
-      color: var(--muted); font-size: 0.78rem; line-height: 1.35; background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.25;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 8px;
     }
 
-    .footer { color: var(--muted); font-size: 0.78rem; padding: 2px 4px 12px; line-height: 1.35; }
+    .footer { color: var(--muted); font-size: 0.72rem; padding: 0 2px 8px; line-height: 1.25; }
     .error {
-      color: #ffd1d1; background: rgba(248,113,113,0.10); border: 1px solid rgba(248,113,113,0.28);
-      border-radius: 10px; padding: 10px; font-size: 0.88rem; display: none;
+      color: #ffd1d1;
+      background: rgba(248,113,113,0.10);
+      border: 1px solid rgba(248,113,113,0.28);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.82rem;
+      display: none;
+      line-height: 1.2;
+    }
+
+    @media (max-width: 1180px) {
+      .controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .controls .field { grid-column: span 2 !important; }
+      .controls .field:nth-child(2),
+      .controls .field:nth-child(3),
+      .controls .field:nth-child(6),
+      .controls .field:nth-child(7) { grid-column: span 1 !important; }
+      .controls .field:nth-child(4),
+      .controls .field:nth-child(5),
+      .controls .field:nth-child(8) { grid-column: span 2 !important; }
     }
 
     @media (max-width: 980px) {
-      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      body { padding: 10px; }
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .controls .field { grid-column: span 1 !important; }
       .span-8, .span-6, .span-4 { grid-column: span 12; }
       .current-grid { grid-template-columns: 1fr; }
+      .chart { height: 176px; }
+      .radar-stage { aspect-ratio: 16 / 10; }
+      .badge { white-space: normal; }
+      .field button, .field .link-button { white-space: normal; }
     }
+
+    .legal {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.015);
+      box-shadow: var(--shadow);
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+    .legal details { cursor: default; }
+    .legal summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 700;
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 2px 0;
+      outline: none;
+    }
+    .legal summary::-webkit-details-marker { display: none; }
+    .legal .legal-body { margin-top: 8px; display: grid; gap: 8px; }
+    .legal a { color: #b9d7ff; text-decoration: none; }
+    .legal a:hover { text-decoration: underline; }
+    .legal .legal-mini { opacity: 0.9; }
+
+
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="header">
       <div class="title-row">
-        <h1>Dashboard Meteo Live · aggiornamento automatico ogni 5 minuti</h1>
+        <h1>Dashboard Meteo FVG</h1>
         <div class="status-badges">
           <span class="badge" role="status" aria-live="polite" aria-atomic="true"><span id="statusDot" class="dot"></span><span id="statusText">In attesa primo aggiornamento</span></span>
           <span class="badge">Ultimo update: <strong id="lastUpdate">-</strong></span>
           <span class="badge">Prossimo update: <strong id="nextUpdate">-</strong></span>
         </div>
       </div>
-      <div class="sub">Pagina autonoma lato browser. Sorgente dati principale: Open-Meteo. Polling ogni 300 secondi, senza backend.</div>
-
       <div class="controls">
         <div class="field">
           <label for="citySelect">Località rapide FVG</label>
@@ -248,23 +470,45 @@
         <div class="current-grid" id="diagnosticsGrid"></div>
       </div>
 
-      <div class="panel span-6">
-        <h2>Radar FVG live (Protezione Civile / DPC)</h2>
-        <div class="hint">Vista radar fissa sul Friuli Venezia Giulia tramite WMS. Aggiornamento sincronizzato con la dashboard e refresh manuale dedicato.</div>
-        <div class="radar-wrap">
-          <div class="radar-toolbar">
-            <div class="radar-meta">
-              <span>Layer: <strong id="radarLayerLabel">radar:vmi</strong></span>
-              <span>Frame radar: <strong id="radarFrameTime">ultimo disponibile</strong></span>
-              <span>Refresh radar: <strong id="radarLastUpdate">-</strong></span>
-            </div>
-            <button id="btnRadarRefresh" type="button">Aggiorna radar</button>
-          </div>
-          <div class="radar-stage">
-            <div id="radarMap" class="radar-map" aria-label="Mappa radar FVG DPC"></div>
-            <div class="radar-overlay-note">Fonte radar: servizi DPC Radar (WMS). Vista centrata sul Friuli Venezia Giulia.</div>
-          </div>
-        </div>
+      <div class="stack span-6">
+        <div class="panel">
+                <h2>Radar FVG live (Protezione Civile / DPC)</h2>
+                <div class="hint">Vista radar sul Friuli Venezia Giulia. Aggiornamento sincronizzato con la dashboard e refresh manuale dedicato.</div>
+                <div class="radar-wrap">
+                  <div class="radar-toolbar">
+                    <div class="radar-meta">
+                      <span>Layer: <strong id="radarLayerLabel">radar:vmi</strong></span>
+                      <span>Frame radar: <strong id="radarFrameTime">ultimo disponibile</strong></span>
+                      <span>Refresh radar: <strong id="radarLastUpdate">-</strong></span>
+                    </div>
+                    <button id="btnRadarRefresh" type="button">Aggiorna radar</button>
+                  </div>
+                  <div class="radar-stage">
+                    <div id="radarMap" class="radar-map" aria-label="Mappa radar FVG DPC"></div>
+                    <div class="radar-overlay-note">Fonte radar: piattaforma Radar-DPC (Dipartimento della Protezione Civile).</div>
+                  </div>
+                </div>
+              </div>
+
+      
+              <div class="panel">
+                <h2>Lampi in tempo reale</h2>
+                <div class="hint">Mappa fulminazioni in tempo reale (Blitzortung / LightningMaps), centrata sul Friuli Venezia Giulia.</div>
+                <div class="lightning-wrap">
+                  <div class="lightning-toolbar">
+                    <div class="lightning-meta">
+                      <span>Fonte: <strong>Blitzortung</strong></span>
+                      <span>Centro: <strong>FVG</strong></span>
+                                          </div>
+                    <a href="https://maps.blitzortung.org/#7/46.15/13.10" target="_blank" rel="noopener">Apri grande</a>
+                  </div>
+                  <div class="lightning-stage">
+                    <iframe id="lightningFrame" title="Lampi in tempo reale (Blitzortung)" loading="lazy" referrerpolicy="no-referrer" src="https://maps.blitzortung.org/?MapInteractive=1&NavigationControl=1&FullScreenControl=1&Cookies=0&InfoDiv=0&MenuDiv=0&GeolocateControl=0&ScaleControl=1&MapStyle=2#7/46.15/13.10"></iframe>
+                    <div class="lightning-overlay-note">Se non compare: blocco iframe o policy cookie del browser.</div>
+                  </div>
+                </div>
+              </div>
+
       </div>
 
       <div class="panel span-6">
@@ -290,7 +534,7 @@
 
       <div class="panel span-12">
         <h2>Bollettino convettivo (estratto)</h2>
-        <div class="hint">Estrae dal file <code>bollettino.html</code> (stessa cartella di index) la sezione “Fenomeni convettivi: indicatori (proxy)”.</div>
+        <div class="hint">Estratto automatico della sezione “Fenomeni convettivi: indicatori (proxy)”.</div>
         <div class="bol-wrap">
           <div class="bol-toolbar">
             <div class="bol-meta">
@@ -318,8 +562,29 @@
       </div>
     </section>
 
-    <div class="footer">Nota tecnica: pagina statica per GitHub Pages. Se apri il file in locale con doppio clic (file://), il fetch di <code>bollettino.html</code> può essere bloccato dal browser.</div>
-  </div>
+    <section class="legal">
+      <details>
+        <summary>Fonti, licenze e limitazioni d’uso</summary>
+        <div class="legal-body">
+          <div><strong>Open-Meteo</strong>: dati forniti tramite API sotto licenza <strong>CC BY 4.0</strong>. È richiesta attribuzione e link alla licenza. Riferimenti: <a href="https://open-meteo.com/en/licence" target="_blank" rel="noopener">licenza</a> · <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">termini</a>.</div>
+          <div><strong>Radar DPC (Radar-DPC)</strong>: visualizzazione tramite servizio <strong>WMS</strong> conforme a standard OGC. È una vista informativa, non un sistema di allerta. Riferimenti: <a href="https://dpc-radar.readthedocs.io/it/latest/services.html" target="_blank" rel="noopener">servizi WMS/WMTS</a> · <a href="https://mappe.protezionecivile.gov.it/en/risks-maps-and-dashboards/radar-map/" target="_blank" rel="noopener">pagina radar</a>.</div>
+<div class="legal-mini"><strong>Nota tecnica</strong>: pagina statica. Se apri in locale (file://), il fetch di <code>bollettino.html</code> può essere bloccato dal browser. Alcuni browser possono bloccare iframe di terze parti.</div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Note operative su lampi, Meteologix e responsabilità</summary>
+        <div class="legal-body">
+          <div><strong>Lampi (Blitzortung / LightningMaps)</strong>: questa vista incorpora la mappa live via <strong>iframe</strong>. È un progetto volontario, non ufficiale. Uso informativo; non usarla per sistemi di allerta, valutazioni di rischio o impieghi commerciali senza permessi espliciti. Riferimenti: <a href="https://www.limaps.org/terms-of-conditions.html" target="_blank" rel="noopener">termini</a> · <a href="https://docs.lightningmaps.org/web/" target="_blank" rel="noopener">parametri embed</a>.</div>
+          <div><strong>Meteologix</strong>: offre prodotti professionali (radar e fulminazioni) e servizi API. Contenuti e dati sono soggetti a licenza: evitare embedding, mirroring o scraping senza accordo/permesso. Riferimenti: <a href="https://www.business.meteologix.com/en/api" target="_blank" rel="noopener">API</a> · <a href="https://www.business.meteologix.com/en/satellit-blitz" target="_blank" rel="noopener">Satellite &amp; Lightning</a> · <a href="https://weathermodels.com/index.php?r=site%2Fterms-of-use" target="_blank" rel="noopener">termini portale</a>.</div>
+          <div><strong>Responsabilità</strong>: le viste sono per “situational awareness”. Eventi, danni e responsabilità richiedono fonti ufficiali e verifiche dedicate.</div>
+        </div>
+      </details>
+    </section>
+
+
+
+    </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
