@@ -1,590 +1,1121 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Meteo Live · Open-Meteo (FIXED)</title>
+  <title>Nowcasting Friuli | Dashboard operativa</title>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://api.open-meteo.com" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
-
     :root {
-      --bg: #0b1220;
-      --panel: #121b2f;
-      --panel-2: #16223c;
-      --text: #e9eefb;
-      --muted: #9fb0d4;
-      --accent: #61a8ff;
-      --accent-2: #6ee7b7;
-      --warn: #fbbf24;
-      --danger: #f87171;
-      --border: rgba(255,255,255,0.08);
-      --shadow: 0 8px 22px rgba(0,0,0,0.22);
+      --bg: #07111f;
+      --bg-2: #0b162a;
+      --panel: rgba(13, 24, 43, 0.92);
+      --panel-soft: rgba(18, 31, 55, 0.88);
+      --panel-strong: #101d35;
+      --text: #edf3ff;
+      --muted: #9daecc;
+      --muted-2: #7f93b8;
+      --line: rgba(255,255,255,0.08);
+      --line-strong: rgba(255,255,255,0.12);
+      --accent: #78aeff;
+      --accent-2: #6be2c1;
+      --warn: #ffca62;
+      --danger: #ff8b8b;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      --radius-xl: 20px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
     }
 
     * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
       padding: 0;
-      background: linear-gradient(180deg, #09101d 0%, #0b1220 100%);
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top right, rgba(120,174,255,0.14), transparent 28%),
+        radial-gradient(circle at left 20%, rgba(107,226,193,0.08), transparent 25%),
+        linear-gradient(180deg, #06101d 0%, #081220 100%);
       color: var(--text);
       font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
     }
-    body { padding: 12px; }
 
-    .wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 12px; }
-
-    .header {
-      background: linear-gradient(180deg, rgba(97,168,255,0.09), rgba(97,168,255,0.025));
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 14px;
-      box-shadow: var(--shadow);
-      display: grid;
-      gap: 6px;
+    body {
+      padding: 18px;
     }
-    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-    h1 { font-size: 1.02rem; margin: 0; letter-spacing: 0.1px; line-height: 1.2; }
-    .sub { color: var(--muted); font-size: 0.83rem; line-height: 1.28; }
 
-    .status-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-    .badge {
-      background: rgba(255,255,255,0.035);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 0.74rem;
+    a {
+      color: #c5dcff;
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .wrap {
+      max-width: 1380px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .shell {
+      position: relative;
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+        linear-gradient(120deg, rgba(120,174,255,0.10), rgba(107,226,193,0.04) 55%, transparent 80%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.9fr);
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .hero-copy {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .eyebrow {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      min-height: 28px;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,0.14); }
-    .dot.ok { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(110,231,183,0.14); }
-    .dot.err { background: var(--danger); box-shadow: 0 0 0 4px rgba(248,113,113,0.14); }
-
-    
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 8px;
-      margin-top: 2px;
-      align-items: stretch;
+      width: fit-content;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(120,174,255,0.16);
+      background: rgba(120,174,255,0.09);
+      color: #d7e7ff;
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    /* Layout più leggibile: niente pulsanti “a fisarmonica” */
-    .controls .field:nth-child(1) { grid-column: span 3; }
-    .controls .field:nth-child(2) { grid-column: span 2; }
-    .controls .field:nth-child(3) { grid-column: span 2; }
-    .controls .field:nth-child(4) { grid-column: span 3; }
-    .controls .field:nth-child(5) { grid-column: span 2; }
-    .controls .field:nth-child(6) { grid-column: span 4; }
-    .controls .field:nth-child(7) { grid-column: span 4; }
-    .controls .field:nth-child(8) { grid-column: span 4; }
 
-    .field {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px;
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 5px rgba(107,226,193,0.12);
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2vw, 2.05rem);
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 72ch;
+    }
+
+    .hero-notes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .note-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      color: var(--muted);
+      font-size: 0.77rem;
+      white-space: nowrap;
+    }
+
+    .hero-status {
       display: grid;
-      gap: 5px;
+      gap: 12px;
       align-content: start;
       min-width: 0;
     }
-    .field label {
-      font-size: 0.72rem;
-      color: var(--muted);
-      line-height: 1.1;
-      min-height: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+
+    .status-card,
+    .meta-card,
+    .toolbar,
+    .panel,
+    .legal {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        var(--panel);
+      box-shadow: var(--shadow);
     }
-    .field input, .field select {
-      width: 100%;
+
+    .status-card {
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .status-card .label {
+      color: var(--muted-2);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       min-width: 0;
-      background: #0b1325;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 7px 8px;
-      font-size: 0.84rem;
+    }
+
+    .status-text-wrap {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .status-text-wrap strong {
+      font-size: 1rem;
       line-height: 1.2;
     }
-    
-    .field button, .field .link-button {
-      width: 100%;
-      min-width: 0;
-      background: linear-gradient(180deg, #2a65c8, #1d4da2);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: #fff;
-      border-radius: 8px;
-      padding: 8px 9px;
-      font-weight: 600;
+
+    .status-text-wrap span {
+      color: var(--muted);
       font-size: 0.8rem;
-      line-height: 1.15;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-height: 34px;
+      line-height: 1.25;
     }
 
-    .field button.secondary { background: linear-gradient(180deg, #28405f, #1e314a); }
-
-    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
-    .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      padding: 11px;
-      min-width: 0;
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
     }
-    .panel h2 { margin: 0 0 7px 0; font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.2; }
-    .panel .hint { color: var(--muted); font-size: 0.75rem; line-height: 1.25; margin-bottom: 8px; }
 
-    .span-4 { grid-column: span 4; }
-    .span-6 { grid-column: span 6; }
-    .span-8 { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
-    .stack { display: grid; gap: 12px; min-width: 0; }
-
-    .current-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
-    .metric {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px;
+    .mini-stat {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.025);
+      padding: 10px 11px;
       display: grid;
       gap: 4px;
       min-width: 0;
     }
-    .metric .name { color: var(--muted); font-size: 0.72rem; line-height: 1.15; }
-    .metric .value {
-      font-size: 1.02rem;
-      font-weight: 700;
-      line-height: 1.05;
-      overflow-wrap: anywhere;
-    }
-    .metric .mini { color: var(--muted); font-size: 0.7rem; line-height: 1.15; }
 
-    .table-wrap {
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--panel-2);
-      max-width: 100%;
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    thead th {
-      text-align: left;
-      color: var(--muted);
-      font-weight: 600;
-      padding: 8px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: #16223c;
-    }
-    tbody td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
-    tbody tr:hover { background: rgba(255,255,255,0.03); }
-
-    .chart-box {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px;
-    }
-    .chart-box + .chart-box { margin-top: 8px; }
-    .chart-title { font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; line-height: 1.2; }
-    .chart {
-      width: 100%;
-      height: 188px;
-      display: block;
-      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));
-      border-radius: 8px;
-    }
-
-    .radar-wrap, .bol-wrap, .lightning-wrap {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .radar-toolbar, .bol-toolbar, .lightning-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 8px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.02);
-      flex-wrap: wrap;
-    }
-    .radar-meta, .bol-meta, .lightning-meta {
+    .mini-stat .k {
+      color: var(--muted-2);
       font-size: 0.72rem;
-      color: var(--muted);
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .mini-stat .v {
+      font-size: 0.98rem;
+      font-weight: 700;
       line-height: 1.2;
     }
-    .radar-toolbar button, .bol-toolbar button, .bol-toolbar a, .lightning-toolbar a {
-      background: linear-gradient(180deg, #28405f, #1e314a);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: white;
-      border-radius: 7px;
-      padding: 5px 8px;
-      font-size: 0.74rem;
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 6px rgba(255,202,98,0.14);
+      flex: 0 0 auto;
+    }
+
+    .dot.ok {
+      background: var(--accent-2);
+      box-shadow: 0 0 0 6px rgba(107,226,193,0.14);
+    }
+
+    .dot.err {
+      background: var(--danger);
+      box-shadow: 0 0 0 6px rgba(255,139,139,0.14);
+    }
+
+    .toolbar {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .toolbar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-head h2,
+    .panel-title h2 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .toolbar-head p,
+    .panel-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      max-width: 70ch;
+    }
+
+    .loc-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(120,174,255,0.16);
+      background: rgba(120,174,255,0.07);
+      color: #d7e7ff;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .field {
+      grid-column: span 3;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.012));
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .field.wide { grid-column: span 4; }
+    .field.action { grid-column: span 2; }
+
+    .field label {
+      color: var(--muted-2);
+      font-size: 0.73rem;
       line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: #091528;
+      color: var(--text);
+      padding: 10px 11px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: rgba(120,174,255,0.55);
+      box-shadow: 0 0 0 4px rgba(120,174,255,0.13);
+      background: #0b1830;
+    }
+
+    .field small {
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
+    button,
+    .link-button,
+    .toolbar-link {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #fff;
       cursor: pointer;
+      text-align: center;
       text-decoration: none;
+      min-height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      text-align: center;
-      white-space: normal;
+      gap: 8px;
+      transition: transform 0.12s ease, filter 0.12s ease, border-color 0.12s ease;
     }
-    .bol-actions { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
 
-    .radar-stage { position: relative; aspect-ratio: 16 / 9; background: #0a1222; }
-    
-    .lightning-stage { position: relative; aspect-ratio: 16 / 9; background: #0a1222; }
-    .lightning-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-    .lightning-overlay-note {
-      position: absolute;
-      left: 8px;
-      bottom: 8px;
-      padding: 4px 7px;
-      background: rgba(0,0,0,0.42);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 8px;
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.88);
-      pointer-events: none;
-      max-width: calc(100% - 16px);
-      line-height: 1.2;
+    button:hover,
+    .link-button:hover,
+    .toolbar-link:hover {
+      text-decoration: none;
+      filter: brightness(1.06);
     }
-.radar-map { width: 100%; height: 100%; background: #08101f; }
-    .leaflet-container { background: #08101f; font-family: inherit; }
-    .radar-overlay-note {
-      position: absolute;
-      left: 6px;
-      bottom: 6px;
-      background: rgba(4,10,18,0.72);
-      border: 1px solid rgba(255,255,255,0.12);
+
+    button:active,
+    .link-button:active,
+    .toolbar-link:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button,
+    .link-button.primary {
+      background: linear-gradient(180deg, #2d69cf, #1c4da3);
+    }
+
+    .secondary,
+    .toolbar-link,
+    .link-button.secondary {
+      background: linear-gradient(180deg, #28415f, #1b2e46);
+    }
+
+    .error {
+      display: none;
+      border: 1px solid rgba(255,139,139,0.30);
+      border-radius: var(--radius-lg);
+      background: rgba(255,139,139,0.10);
+      color: #ffe2e2;
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      box-shadow: var(--shadow);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .panel {
+      grid-column: span 12;
+      padding: 14px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
       color: var(--muted);
-      padding: 4px 6px;
-      border-radius: 7px;
-      font-size: 0.66rem;
+      font-size: 0.74rem;
+      white-space: nowrap;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.018));
+      padding: 11px;
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .metric .name {
+      color: var(--muted-2);
+      font-size: 0.74rem;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric .value {
+      font-size: 1.06rem;
+      font-weight: 700;
       line-height: 1.15;
-      max-width: calc(100% - 12px);
+      overflow-wrap: anywhere;
     }
 
-    .bol-body { padding: 8px; display: grid; gap: 8px; }
-    .bol-status {
+    .metric .mini {
       color: var(--muted);
-      font-size: 0.76rem;
-      line-height: 1.2;
-      padding: 7px 8px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.77rem;
+      line-height: 1.35;
     }
+
+    .chart-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chart-box,
+    .radar-wrap,
+    .bol-wrap,
+    .lightning-wrap,
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.012));
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .chart-head,
+    .radar-toolbar,
+    .bol-toolbar,
+    .lightning-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
+      flex-wrap: wrap;
+    }
+
+    .chart-title {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .chart-title strong {
+      font-size: 0.86rem;
+      line-height: 1.2;
+    }
+
+    .chart-title span {
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.3;
+    }
+
+    .chart {
+      width: 100%;
+      height: 198px;
+      display: block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0));
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #11203a;
+      color: var(--muted-2);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.84rem;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .radar-meta,
+    .bol-meta,
+    .lightning-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.3;
+      min-width: 0;
+    }
+
+    .radar-stage,
+    .lightning-stage {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #081221;
+    }
+
+    .radar-map { width: 100%; height: 100%; }
+    .leaflet-container { background: #081221; font-family: inherit; }
+
+    .lightning-stage iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .overlay-note {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(5, 10, 18, 0.7);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.86);
+      font-size: 0.72rem;
+      line-height: 1.3;
+      max-width: calc(100% - 20px);
+      pointer-events: none;
+    }
+
+    .bol-body {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .bol-status,
+    .bol-note {
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.025);
+      padding: 11px 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
     .bol-reliability {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       width: fit-content;
-      padding: 5px 8px;
+      padding: 7px 11px;
       border-radius: 999px;
-      background: rgba(97,168,255,0.10);
-      border: 1px solid rgba(97,168,255,0.20);
+      border: 1px solid rgba(120,174,255,0.20);
+      background: rgba(120,174,255,0.09);
       color: var(--text);
-      font-size: 0.75rem;
-    }
-    .bol-note {
-      color: var(--muted);
-      font-size: 0.72rem;
-      line-height: 1.25;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 8px;
-      padding: 8px;
+      font-size: 0.78rem;
     }
 
-    .footer { color: var(--muted); font-size: 0.72rem; padding: 0 2px 8px; line-height: 1.25; }
-    .error {
-      color: #ffd1d1;
-      background: rgba(248,113,113,0.10);
-      border: 1px solid rgba(248,113,113,0.28);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 0.82rem;
-      display: none;
-      line-height: 1.2;
-    }
-
-    @media (max-width: 1180px) {
-      .controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-      .controls .field { grid-column: span 2 !important; }
-      .controls .field:nth-child(2),
-      .controls .field:nth-child(3),
-      .controls .field:nth-child(6),
-      .controls .field:nth-child(7) { grid-column: span 1 !important; }
-      .controls .field:nth-child(4),
-      .controls .field:nth-child(5),
-      .controls .field:nth-child(8) { grid-column: span 2 !important; }
-    }
-
-    @media (max-width: 980px) {
-      body { padding: 10px; }
-      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .controls .field { grid-column: span 1 !important; }
-      .span-8, .span-6, .span-4 { grid-column: span 12; }
-      .current-grid { grid-template-columns: 1fr; }
-      .chart { height: 176px; }
-      .radar-stage { aspect-ratio: 16 / 10; }
-      .badge { white-space: normal; }
-      .field button, .field .link-button { white-space: normal; }
+    .bol-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .legal {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255,255,255,0.015);
-      box-shadow: var(--shadow);
       padding: 8px 10px;
-      color: var(--muted);
-      font-size: 0.74rem;
-      line-height: 1.35;
     }
-    .legal details { cursor: default; }
+
+    .legal details {
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .legal details + details {
+      margin-top: 8px;
+    }
+
     .legal summary {
-      cursor: pointer;
       list-style: none;
-      font-weight: 700;
+      cursor: pointer;
+      padding: 10px 8px;
       color: var(--text);
-      font-size: 0.82rem;
-      padding: 2px 0;
-      outline: none;
+      font-size: 0.88rem;
+      font-weight: 700;
     }
+
     .legal summary::-webkit-details-marker { display: none; }
-    .legal .legal-body { margin-top: 8px; display: grid; gap: 8px; }
-    .legal a { color: #b9d7ff; text-decoration: none; }
-    .legal a:hover { text-decoration: underline; }
-    .legal .legal-mini { opacity: 0.9; }
 
+    .legal-body {
+      display: grid;
+      gap: 8px;
+      padding: 0 8px 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
 
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .footer-line {
+      color: var(--muted-2);
+      font-size: 0.76rem;
+      line-height: 1.5;
+      padding: 0 2px 8px;
+    }
+
+    @media (max-width: 1240px) {
+      .hero-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .field { grid-column: span 4; }
+      .field.wide { grid-column: span 6; }
+      .field.action { grid-column: span 3; }
+    }
+
+    @media (max-width: 980px) {
+      body { padding: 12px; }
+
+      .controls-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field,
+      .field.wide,
+      .field.action { grid-column: span 1; }
+
+      .span-8,
+      .span-7,
+      .span-6,
+      .span-5,
+      .span-4,
+      .span-3 { grid-column: span 12; }
+
+      .metric-grid,
+      .status-grid { grid-template-columns: 1fr; }
+
+      .chart { height: 184px; }
+
+      .radar-stage,
+      .lightning-stage { aspect-ratio: 16 / 10; }
+    }
+
+    @media (max-width: 640px) {
+      .hero-inner,
+      .toolbar,
+      .panel,
+      .status-card { padding: 13px; }
+
+      .toolbar-head,
+      .panel-title,
+      .radar-toolbar,
+      .bol-toolbar,
+      .lightning-toolbar,
+      .chart-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      table { min-width: 640px; }
+
+      .loc-summary,
+      .note-chip { white-space: normal; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <section class="header">
-      <div class="title-row">
-        <h1>Dashboard Meteo FVG</h1>
-        <div class="status-badges">
-          <span class="badge" role="status" aria-live="polite" aria-atomic="true"><span id="statusDot" class="dot"></span><span id="statusText">In attesa primo aggiornamento</span></span>
-          <span class="badge">Ultimo update: <strong id="lastUpdate">-</strong></span>
-          <span class="badge">Prossimo update: <strong id="nextUpdate">-</strong></span>
-        </div>
-      </div>
-      <div class="controls">
-        <div class="field">
-          <label for="citySelect">Località rapide FVG</label>
-          <select id="citySelect">
-            <option value="custom">Personalizzata (manuale)</option>
-            <option value="udine" selected>Udine</option>
-            <option value="gorizia">Gorizia</option>
-            <option value="pordenone">Pordenone</option>
-            <option value="trieste">Trieste</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="lat">Latitudine</label>
-          <input id="lat" type="number" step="0.0001" value="46.0711" />
-        </div>
-        <div class="field">
-          <label for="lon">Longitudine</label>
-          <input id="lon" type="number" step="0.0001" value="13.2346" />
-        </div>
-        <div class="field">
-          <label for="locName">Nome località (etichetta)</label>
-          <input id="locName" type="text" value="Friuli Venezia Giulia" />
-        </div>
-        <div class="field">
-          <label for="tz">Timezone</label>
-          <input id="tz" type="text" value="Europe/Rome" />
-        </div>
-        <div class="field">
-          <label>&nbsp;</label>
-          <button id="btnRefresh">Aggiorna adesso</button>
-        </div>
-        <div class="field">
-          <label>&nbsp;</label>
-          <button id="btnGeo" class="secondary">Usa geolocalizzazione</button>
-        </div>
-        <div class="field">
-          <label>Bollettino manuale</label>
-          <a class="link-button" id="btnBollettinoTop" href="./bollettino.html" target="_blank" rel="noopener">Bollettino temporali</a>
-        </div>
-      </div>
-    </section>
-
-    <div id="errorBox" class="error" role="alert" aria-live="assertive"></div>
-
-    <section class="grid">
-      <div class="panel span-4">
-        <h2>Condizioni attuali</h2>
-        <div class="hint">Lettura corrente + info di supporto dal dataset orario.</div>
-        <div class="current-grid" id="currentGrid"></div>
-      </div>
-
-      <div class="panel span-8">
-        <h2>Evoluzione prossime 24 ore</h2>
-        <div class="hint">Grafici sintetici per temperatura, precipitazione e vento. Aggiornati senza ricaricare la pagina.</div>
-        <div class="chart-box">
-          <div class="chart-title">Temperatura (°C) · 24h</div>
-          <svg id="tempChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">Precipitazione (mm/h) · 24h</div>
-          <svg id="rainChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">Vento 10 m (km/h) · 24h</div>
-          <svg id="windChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
-        </div>
-      </div>
-
-      <div class="panel span-6">
-        <h2>Indicatori operativi rapidi</h2>
-        <div class="hint">Valutazione semplice, non sostituisce il nowcasting esperto. È una lettura rapida della situazione.</div>
-        <div class="current-grid" id="diagnosticsGrid"></div>
-      </div>
-
-      <div class="stack span-6">
-        <div class="panel">
-                <h2>Radar FVG live (Protezione Civile / DPC)</h2>
-                <div class="hint">Vista radar sul Friuli Venezia Giulia. Aggiornamento sincronizzato con la dashboard e refresh manuale dedicato.</div>
-                <div class="radar-wrap">
-                  <div class="radar-toolbar">
-                    <div class="radar-meta">
-                      <span>Layer: <strong id="radarLayerLabel">radar:vmi</strong></span>
-                      <span>Frame radar: <strong id="radarFrameTime">ultimo disponibile</strong></span>
-                      <span>Refresh radar: <strong id="radarLastUpdate">-</strong></span>
-                    </div>
-                    <button id="btnRadarRefresh" type="button">Aggiorna radar</button>
-                  </div>
-                  <div class="radar-stage">
-                    <div id="radarMap" class="radar-map" aria-label="Mappa radar FVG DPC"></div>
-                    <div class="radar-overlay-note">Fonte radar: piattaforma Radar-DPC (Dipartimento della Protezione Civile).</div>
-                  </div>
-                </div>
-              </div>
-
-      
-              <div class="panel">
-                <h2>Lampi in tempo reale</h2>
-                <div class="hint">Mappa fulminazioni in tempo reale (Blitzortung / LightningMaps), centrata sul Friuli Venezia Giulia.</div>
-                <div class="lightning-wrap">
-                  <div class="lightning-toolbar">
-                    <div class="lightning-meta">
-                      <span>Fonte: <strong>Blitzortung</strong></span>
-                      <span>Centro: <strong>FVG</strong></span>
-                                          </div>
-                    <a href="https://maps.blitzortung.org/#7/46.15/13.10" target="_blank" rel="noopener">Apri grande</a>
-                  </div>
-                  <div class="lightning-stage">
-                    <iframe id="lightningFrame" title="Lampi in tempo reale (Blitzortung)" loading="lazy" referrerpolicy="no-referrer" src="https://maps.blitzortung.org/?MapInteractive=1&NavigationControl=1&FullScreenControl=1&Cookies=0&InfoDiv=0&MenuDiv=0&GeolocateControl=0&ScaleControl=1&MapStyle=2#7/46.15/13.10"></iframe>
-                    <div class="lightning-overlay-note">Se non compare: blocco iframe o policy cookie del browser.</div>
-                  </div>
-                </div>
-              </div>
-
-      </div>
-
-      <div class="panel span-6">
-        <h2>Prossime 12 ore</h2>
-        <div class="hint">Estratto tabellare con timestamp locali e variabili chiave.</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Ora</th>
-                <th>T (°C)</th>
-                <th>Pioggia</th>
-                <th>Vento km/h</th>
-                <th>Raffica km/h</th>
-                <th>UR %</th>
-                <th>Nuvole %</th>
-              </tr>
-            </thead>
-            <tbody id="hoursBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel span-12">
-        <h2>Bollettino convettivo (estratto)</h2>
-        <div class="hint">Estratto automatico della sezione “Fenomeni convettivi: indicatori (proxy)”.</div>
-        <div class="bol-wrap">
-          <div class="bol-toolbar">
-            <div class="bol-meta">
-              <span>Fonte: <strong id="bolSourceLabel">./bollettino.html</strong></span>
-              <span>Stato: <strong id="bolStatusLabel">in attesa</strong></span>
-              <span>Lettura: <strong id="bolLastRead">-</strong></span>
+    <div class="shell">
+      <section class="hero">
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <span class="eyebrow">Nowcasting regionale</span>
+            <div>
+              <h1>Nowcasting Friuli</h1>
+              <p>Monitoraggio operativo del Friuli Venezia Giulia con quadro attuale, trend a 24 ore, radar, fulminazioni e bollettino convettivo nella stessa pagina.</p>
             </div>
-            <div class="bol-actions">
-              <button id="btnBollettinoRefresh" type="button">Aggiorna estratto</button>
-              <a id="bollettinoLink" href="./bollettino.html" target="_blank" rel="noopener">Apri bollettino</a>
+            <div class="hero-notes">
+              <span class="note-chip">Dati meteo da Open-Meteo</span>
+              <span class="note-chip">Radar live DPC</span>
+              <span class="note-chip">Lampi live Blitzortung</span>
+              <span class="note-chip">Refresh automatico ogni 5 minuti</span>
             </div>
           </div>
-          <div class="bol-body">
-            <div id="bolStatusBox" class="bol-status" role="status" aria-live="polite">In attesa del primo caricamento del bollettino.</div>
-            <div id="bolReliability"></div>
-            <div id="bolTableWrap" class="table-wrap" style="display:none;">
-              <table>
-                <thead><tr id="bolTableHeadRow"></tr></thead>
-                <tbody id="bolTableBody"></tbody>
-              </table>
+
+          <div class="hero-status">
+            <div class="status-card">
+              <span class="label">Stato della dashboard</span>
+              <div class="status-line" role="status" aria-live="polite" aria-atomic="true">
+                <span id="statusDot" class="dot"></span>
+                <div class="status-text-wrap">
+                  <strong id="statusText">In attesa del primo aggiornamento</strong>
+                  <span>Il sistema aggiorna dati, radar e bollettino senza ricaricare la pagina.</span>
+                </div>
+              </div>
+              <div class="status-grid">
+                <div class="mini-stat">
+                  <span class="k">Ultimo aggiornamento</span>
+                  <span class="v" id="lastUpdate">-</span>
+                </div>
+                <div class="mini-stat">
+                  <span class="k">Prossimo aggiornamento</span>
+                  <span class="v" id="nextUpdate">-</span>
+                </div>
+              </div>
             </div>
-            <div id="bolNote" class="bol-note" style="display:none;"></div>
+            <div class="status-card">
+              <span class="label">Ambito</span>
+              <div class="status-grid">
+                <div class="mini-stat">
+                  <span class="k">Area</span>
+                  <span class="v">Friuli Venezia Giulia</span>
+                </div>
+                <div class="mini-stat">
+                  <span class="k">Uso</span>
+                  <span class="v">Monitoraggio e nowcasting</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="legal">
-      <details>
-        <summary>Fonti, licenze e limitazioni d’uso</summary>
-        <div class="legal-body">
-          <div><strong>Open-Meteo</strong>: dati forniti tramite API sotto licenza <strong>CC BY 4.0</strong>. È richiesta attribuzione e link alla licenza. Riferimenti: <a href="https://open-meteo.com/en/licence" target="_blank" rel="noopener">licenza</a> · <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">termini</a>.</div>
-          <div><strong>Radar DPC (Radar-DPC)</strong>: visualizzazione tramite servizio <strong>WMS</strong> conforme a standard OGC. È una vista informativa, non un sistema di allerta. Riferimenti: <a href="https://dpc-radar.readthedocs.io/it/latest/services.html" target="_blank" rel="noopener">servizi WMS/WMTS</a> · <a href="https://mappe.protezionecivile.gov.it/en/risks-maps-and-dashboards/radar-map/" target="_blank" rel="noopener">pagina radar</a>.</div>
-<div class="legal-mini"><strong>Nota tecnica</strong>: pagina statica. Se apri in locale (file://), il fetch di <code>bollettino.html</code> può essere bloccato dal browser. Alcuni browser possono bloccare iframe di terze parti.</div>
+      <section class="toolbar">
+        <div class="toolbar-head">
+          <div>
+            <h2>Controlli località e aggiornamento</h2>
+            <p>Selezione rapida delle località, coordinate manuali, geolocalizzazione e accesso diretto al bollettino convettivo.</p>
+          </div>
+          <div class="loc-summary" id="locSummary">Località attiva: Udine · 46.0711, 13.2346</div>
         </div>
-      </details>
 
-      <details>
-        <summary>Note operative su lampi, Meteologix e responsabilità</summary>
-        <div class="legal-body">
-          <div><strong>Lampi (Blitzortung / LightningMaps)</strong>: questa vista incorpora la mappa live via <strong>iframe</strong>. È un progetto volontario, non ufficiale. Uso informativo; non usarla per sistemi di allerta, valutazioni di rischio o impieghi commerciali senza permessi espliciti. Riferimenti: <a href="https://www.limaps.org/terms-of-conditions.html" target="_blank" rel="noopener">termini</a> · <a href="https://docs.lightningmaps.org/web/" target="_blank" rel="noopener">parametri embed</a>.</div>
-          <div><strong>Meteologix</strong>: offre prodotti professionali (radar e fulminazioni) e servizi API. Contenuti e dati sono soggetti a licenza: evitare embedding, mirroring o scraping senza accordo/permesso. Riferimenti: <a href="https://www.business.meteologix.com/en/api" target="_blank" rel="noopener">API</a> · <a href="https://www.business.meteologix.com/en/satellit-blitz" target="_blank" rel="noopener">Satellite &amp; Lightning</a> · <a href="https://weathermodels.com/index.php?r=site%2Fterms-of-use" target="_blank" rel="noopener">termini portale</a>.</div>
-          <div><strong>Responsabilità</strong>: le viste sono per “situational awareness”. Eventi, danni e responsabilità richiedono fonti ufficiali e verifiche dedicate.</div>
+        <div class="controls-grid">
+          <div class="field">
+            <label for="citySelect">Località rapide del Friuli Venezia Giulia</label>
+            <select id="citySelect">
+              <option value="custom">Personalizzata</option>
+              <option value="udine" selected>Udine</option>
+              <option value="gorizia">Gorizia</option>
+              <option value="pordenone">Pordenone</option>
+              <option value="trieste">Trieste</option>
+              <optgroup label="Provincia di Gorizia">
+                <option value="grado">Grado</option>
+                <option value="monfalcone">Monfalcone</option>
+              </optgroup>
+              <optgroup label="Provincia di Pordenone">
+                <option value="maniago">Maniago</option>
+                <option value="sacile">Sacile</option>
+              </optgroup>
+              <optgroup label="Provincia di Trieste">
+                <option value="duino_aurisina">Duino-Aurisina</option>
+                <option value="monrupino">Monrupino</option>
+                <option value="muggia">Muggia</option>
+                <option value="san_dorligo_della_valle">San Dorligo della Valle - Dolina</option>
+                <option value="sgonico">Sgonico</option>
+              </optgroup>
+              <optgroup label="Provincia di Udine">
+                <option value="cividale_del_friuli">Cividale del Friuli</option>
+                <option value="tolmezzo">Tolmezzo</option>
+              </optgroup>
+            </select>
+            <small>Capoluoghi in alto, altri comuni selezionati per provincia e tutti i comuni della provincia di Trieste.</small>
+          </div>
+
+          <div class="field">
+            <label for="lat">Latitudine</label>
+            <input id="lat" type="number" step="0.0001" value="46.0711" />
+            <small>Coordinata utilizzata per il punto di analisi.</small>
+          </div>
+
+          <div class="field">
+            <label for="lon">Longitudine</label>
+            <input id="lon" type="number" step="0.0001" value="13.2346" />
+            <small>Puoi impostare manualmente la posizione desiderata.</small>
+          </div>
+
+          <div class="field wide">
+            <label for="locName">Nome località</label>
+            <input id="locName" type="text" value="Udine" />
+            <small>Nome visualizzato nella dashboard.</small>
+          </div>
+
+          <div class="field">
+            <label for="tz">Timezone</label>
+            <input id="tz" type="text" value="Europe/Rome" />
+            <small>Fuso orario della località analizzata.</small>
+          </div>
+
+          <div class="field action">
+            <label>&nbsp;</label>
+            <button id="btnRefresh" type="button">Aggiorna adesso</button>
+            <small>Ricarica subito dati e grafici.</small>
+          </div>
+
+          <div class="field action">
+            <label>&nbsp;</label>
+            <button id="btnGeo" type="button" class="secondary">Usa geolocalizzazione</button>
+            <small>Usa la posizione rilevata dal browser.</small>
+          </div>
+
+          <div class="field action">
+            <label>Bollettino convettivo</label>
+            <a class="link-button secondary" id="btnBollettinoTop" href="./bollettino.html" target="_blank" rel="noopener">Apri bollettino</a>
+            <small>Apertura diretta del bollettino convettivo.</small>
+          </div>
         </div>
-      </details>
-    </section>
+      </section>
 
+      <div id="errorBox" class="error" role="alert" aria-live="assertive"></div>
 
+      <section class="board">
+        <article class="panel span-4">
+          <div class="panel-title">
+            <div>
+              <h2>Condizioni attuali</h2>
+              <p>Colpo d’occhio sui valori correnti e sulle variabili di supporto associate all’ora attuale.</p>
+            </div>
+            <span class="panel-tag">Snapshot</span>
+          </div>
+          <div class="metric-grid" id="currentGrid"></div>
+        </article>
 
+        <article class="panel span-4">
+          <div class="panel-title">
+            <div>
+              <h2>Indicatori operativi rapidi</h2>
+              <p>Lettura sintetica del quadro nelle prossime 24 ore. Indicatori utili al monitoraggio, da interpretare nel contesto.</p>
+            </div>
+            <span class="panel-tag">Diagnostica</span>
+          </div>
+          <div class="metric-grid" id="diagnosticsGrid"></div>
+        </article>
+
+        <article class="panel span-4">
+          <div class="panel-title">
+            <div>
+              <h2>Prossime 12 ore</h2>
+              <p>Estratto tabellare con variabili chiave per una consultazione rapida e ordinata.</p>
+            </div>
+            <span class="panel-tag">Tabella rapida</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ora</th>
+                  <th>T (°C)</th>
+                  <th>Pioggia</th>
+                  <th>Vento km/h</th>
+                  <th>Raffica km/h</th>
+                  <th>UR %</th>
+                  <th>Nuvole %</th>
+                </tr>
+              </thead>
+              <tbody id="hoursBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel span-12">
+          <div class="panel-title">
+            <div>
+              <h2>Evoluzione prossime 24 ore</h2>
+              <p>Tre grafici essenziali per seguire rapidamente l’evoluzione nelle prossime 24 ore.</p>
+            </div>
+            <span class="panel-tag">Trend 24h</span>
+          </div>
+          <div class="chart-stack">
+            <div class="chart-box">
+              <div class="chart-head">
+                <div class="chart-title">
+                  <strong>Temperatura</strong>
+                  <span>Andamento previsto nelle prossime 24 ore.</span>
+                </div>
+                <span class="panel-tag">°C</span>
+              </div>
+              <svg id="tempChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+            </div>
+
+            <div class="chart-box">
+              <div class="chart-head">
+                <div class="chart-title">
+                  <strong>Precipitazione</strong>
+                  <span>Intensità oraria prevista in mm/h.</span>
+                </div>
+                <span class="panel-tag">mm/h</span>
+              </div>
+              <svg id="rainChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+            </div>
+
+            <div class="chart-box">
+              <div class="chart-head">
+                <div class="chart-title">
+                  <strong>Vento a 10 metri</strong>
+                  <span>Velocità prevista in km/h nelle prossime 24 ore.</span>
+                </div>
+                <span class="panel-tag">km/h</span>
+              </div>
+              <svg id="windChart" class="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel span-6">
+          <div class="panel-title">
+            <div>
+              <h2>Radar FVG live</h2>
+              <p>Vista radar della Protezione Civile centrata sul Friuli Venezia Giulia, con refresh dedicato.</p>
+            </div>
+            <span class="panel-tag">Radar DPC</span>
+          </div>
+          <div class="radar-wrap">
+            <div class="radar-toolbar">
+              <div class="radar-meta">
+                <span>Layer: <strong id="radarLayerLabel">radar:vmi</strong></span>
+                <span>Frame radar: <strong id="radarFrameTime">ultimo disponibile</strong></span>
+                <span>Refresh radar: <strong id="radarLastUpdate">-</strong></span>
+              </div>
+              <button id="btnRadarRefresh" type="button" class="secondary">Aggiorna radar</button>
+            </div>
+            <div class="radar-stage">
+              <div id="radarMap" class="radar-map" aria-label="Mappa radar FVG DPC"></div>
+              <div class="overlay-note">Fonte radar: piattaforma Radar-DPC del Dipartimento della Protezione Civile.</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel span-6">
+          <div class="panel-title">
+            <div>
+              <h2>Lampi in tempo reale</h2>
+              <p>Mappa delle fulminazioni in tempo reale centrata sul settore Friuli Venezia Giulia.</p>
+            </div>
+            <span class="panel-tag">Lightning</span>
+          </div>
+          <div class="lightning-wrap">
+            <div class="lightning-toolbar">
+              <div class="lightning-meta">
+                <span>Fonte: <strong>Blitzortung</strong></span>
+                <span>Centro: <strong>FVG</strong></span>
+              </div>
+              <a class="toolbar-link" href="https://maps.blitzortung.org/#7/46.15/13.10" target="_blank" rel="noopener">Apri grande</a>
+            </div>
+            <div class="lightning-stage">
+              <iframe id="lightningFrame" title="Lampi in tempo reale (Blitzortung)" loading="lazy" referrerpolicy="no-referrer" src="https://maps.blitzortung.org/?MapInteractive=1&NavigationControl=1&FullScreenControl=1&Cookies=0&InfoDiv=0&MenuDiv=0&GeolocateControl=0&ScaleControl=1&MapStyle=2#7/46.15/13.10"></iframe>
+              <div class="overlay-note">La visualizzazione può dipendere dalle impostazioni del browser o dalla disponibilità del servizio esterno.</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel span-12">
+          <div class="panel-title">
+            <div>
+              <h2>Bollettino convettivo</h2>
+              <p>Sintesi della sezione “Fenomeni convettivi: indicatori (proxy)” del bollettino convettivo locale.</p>
+            </div>
+            <span class="panel-tag">Proxy convettivi</span>
+          </div>
+          <div class="bol-wrap">
+            <div class="bol-toolbar">
+              <div class="bol-meta">
+                <span>Fonte: <strong id="bolSourceLabel">Bollettino convettivo locale</strong></span>
+                <span>Stato: <strong id="bolStatusLabel">in attesa</strong></span>
+                <span>Lettura: <strong id="bolLastRead">-</strong></span>
+              </div>
+              <div class="bol-actions">
+                <button id="btnBollettinoRefresh" type="button" class="secondary">Aggiorna estratto</button>
+                <a id="bollettinoLink" class="toolbar-link" href="./bollettino.html" target="_blank" rel="noopener">Apri bollettino</a>
+              </div>
+            </div>
+            <div class="bol-body">
+              <div id="bolStatusBox" class="bol-status" role="status" aria-live="polite">In attesa del primo aggiornamento del bollettino.</div>
+              <div id="bolReliability"></div>
+              <div id="bolTableWrap" class="table-wrap" style="display:none;">
+                <table>
+                  <thead><tr id="bolTableHeadRow"></tr></thead>
+                  <tbody id="bolTableBody"></tbody>
+                </table>
+              </div>
+              <div id="bolNote" class="bol-note" style="display:none;"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="legal">
+        <details>
+          <summary>Fonti e note d’uso</summary>
+          <div class="legal-body">
+            <div><strong>Open-Meteo</strong>: dati meteo forniti tramite API con licenza <strong>CC BY 4.0</strong>. Riferimenti: <a href="https://open-meteo.com/en/licence" target="_blank" rel="noopener">licenza</a> · <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">termini</a>.</div>
+            <div><strong>Radar DPC</strong>: visualizzazione radar basata sui servizi della Protezione Civile. Riferimenti: <a href="https://dpc-radar.readthedocs.io/it/latest/services.html" target="_blank" rel="noopener">servizi WMS/WMTS</a> · <a href="https://mappe.protezionecivile.gov.it/en/risks-maps-and-dashboards/radar-map/" target="_blank" rel="noopener">pagina radar</a>.</div>
+            <div><strong>Blitzortung</strong>: mappa fulminazioni live incorporata da servizio esterno. Riferimenti: <a href="https://www.limaps.org/terms-of-conditions.html" target="_blank" rel="noopener">termini</a> · <a href="https://docs.lightningmaps.org/web/" target="_blank" rel="noopener">documentazione</a>.</div>
+            <div><strong>Uso della pagina</strong>: strumento di monitoraggio e nowcasting. Per allerte, decisioni operative o segnalazioni ufficiali fare sempre riferimento alle fonti istituzionali competenti.</div>
+          </div>
+        </details>
+      </section>
+
+      <div class="footer-line">Nowcasting Friuli riunisce dati, radar, fulminazioni e bollettino convettivo in un’unica interfaccia di monitoraggio regionale.</div>
     </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
@@ -604,7 +1135,18 @@
           udine: { name: 'Udine', lat: 46.0711, lon: 13.2346 },
           gorizia: { name: 'Gorizia', lat: 45.9409, lon: 13.6205 },
           pordenone: { name: 'Pordenone', lat: 45.9564, lon: 12.6600 },
-          trieste: { name: 'Trieste', lat: 45.6495, lon: 13.7768 }
+          trieste: { name: 'Trieste', lat: 45.6495, lon: 13.7768 },
+          grado: { name: 'Grado', lat: 45.6777, lon: 13.4034 },
+          monfalcone: { name: 'Monfalcone', lat: 45.8046, lon: 13.5329 },
+          maniago: { name: 'Maniago', lat: 46.1667, lon: 12.7084 },
+          sacile: { name: 'Sacile', lat: 45.9541, lon: 12.5027 },
+          duino_aurisina: { name: 'Duino-Aurisina', lat: 45.7726, lon: 13.6744 },
+          monrupino: { name: 'Monrupino', lat: 45.7178, lon: 13.8003 },
+          muggia: { name: 'Muggia', lat: 45.6042, lon: 13.7673 },
+          san_dorligo_della_valle: { name: 'San Dorligo della Valle - Dolina', lat: 45.6075, lon: 13.8567 },
+          sgonico: { name: 'Sgonico', lat: 45.7362, lon: 13.7434 },
+          cividale_del_friuli: { name: 'Cividale del Friuli', lat: 46.0900, lon: 13.4347 },
+          tolmezzo: { name: 'Tolmezzo', lat: 46.4072, lon: 13.0161 }
         }
       };
 
@@ -644,13 +1186,20 @@
       function arrNums(a) { return Array.isArray(a) ? a.map(Number).filter(Number.isFinite) : []; }
       function arrMax(a) { const n = arrNums(a); return n.length ? Math.max(...n) : 0; }
       function arrMean(a) { const n = arrNums(a); return n.length ? (n.reduce((x, y) => x + y, 0) / n.length) : 0; }
+      function updateLocationSummary() {
+        if (!el.locSummary) return;
+        const name = cleanWs(el.locName?.value || 'Località');
+        const lat = Number(el.lat?.value || 0);
+        const lon = Number(el.lon?.value || 0);
+        el.locSummary.textContent = `Località attiva: ${name} · ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      }
 
       function cacheDom() {
         [
           'citySelect','lat','lon','locName','tz','btnRefresh','btnGeo','btnBollettinoTop',
-          'statusDot','statusText','lastUpdate','nextUpdate','errorBox',
+          'statusDot','statusText','lastUpdate','nextUpdate','errorBox','locSummary',
           'currentGrid','diagnosticsGrid','hoursBody','tempChart','rainChart','windChart',
-          'radarMap','btnRadarRefresh','radarFrameTime','radarLastUpdate',
+          'radarMap','btnRadarRefresh','radarFrameTime','radarLastUpdate','radarLayerLabel',
           'btnBollettinoRefresh','bollettinoLink','bolSourceLabel','bolStatusLabel','bolLastRead','bolStatusBox',
           'bolReliability','bolTableWrap','bolTableHeadRow','bolTableBody','bolNote'
         ].forEach(id => { el[id] = $(id); });
@@ -710,9 +1259,9 @@
         if (rainMax > 2 || gustMax > 40) stability = 'Dinamicità in aumento';
 
         return [
-          { n:'Rischio rovesci/temporali (proxy)', v:conv, m:`pioggia max ${safeNum(rainMax)} mm/h · raffica max ${safeNum(gustMax)} km/h` },
+          { n:'Rischio rovesci o temporali', v:conv, m:`pioggia max ${safeNum(rainMax)} mm/h · raffica max ${safeNum(gustMax)} km/h` },
           { n:'Segnale ventilazione', v:`${safeNum(windMax)} km/h`, m:`raffiche fino a ${safeNum(gustMax)} km/h` },
-          { n:'Stato massa d’aria (proxy)', v:drying, m:`UR media 24h ${safeNum(humidMean,0)}%` },
+          { n:'Stato massa d’aria', v:drying, m:`UR media 24h ${safeNum(humidMean,0)}%` },
           { n:'Tendenza rapida', v:stability, m:`nuvolosità media 24h ${safeNum(cloudMean,0)}%` }
         ];
       }
@@ -774,7 +1323,7 @@
           const bh = (v / max) * h;
           const xx = pad.left + i * barW + 1;
           const yy = pad.top + h - bh;
-          html += `<rect x="${xx}" y="${yy}" width="${Math.max(1, barW-2)}" height="${Math.max(0,bh)}" rx="2" fill="rgba(110,231,183,0.58)" />`;
+          html += `<rect x="${xx}" y="${yy}" width="${Math.max(1, barW-2)}" height="${Math.max(0,bh)}" rx="2" fill="rgba(107,226,193,0.62)" />`;
         });
         const step = Math.max(1, Math.ceil(nums.length / 6));
         for (let i = 0; i < nums.length; i += step) {
@@ -970,27 +1519,37 @@
       }
       async function refreshBollettinoExtract(manual = false) {
         if (!el.btnBollettinoRefresh) return;
+        const originalText = el.btnBollettinoRefresh.textContent;
+        el.btnBollettinoRefresh.disabled = true;
+        el.btnBollettinoRefresh.textContent = 'Aggiornamento...';
         try {
-          setBollettinoStatus('caricamento', manual ? 'Aggiornamento manuale estratto bollettino in corso...' : 'Lettura automatica del bollettino in corso...');
+          setBollettinoStatus('caricamento', manual ? 'Aggiornamento del bollettino in corso...' : 'Lettura del bollettino in corso...');
           const res = await fetch(`${CONFIG.bollettinoUrl}?_ts=${Date.now()}`, { cache: 'no-store' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const html = await res.text();
           const parsed = parseBollettinoConvectiveExtract(html);
           renderBollettinoExtract(parsed);
-          setBollettinoStatus('ok', 'Estratto proxy convettivi aggiornato dal bollettino locale.');
+          setBollettinoStatus('ok', 'Proxy convettivi aggiornati dal bollettino.');
         } catch (err) {
           console.error(err);
           clearBollettinoExtract();
-          setBollettinoStatus('errore', `Estratto bollettino non disponibile: ${err.message || 'errore sconosciuto'}`);
+          setBollettinoStatus('errore', `Bollettino non disponibile: ${err.message || 'errore sconosciuto'}`);
+        } finally {
+          el.btnBollettinoRefresh.disabled = false;
+          el.btnBollettinoRefresh.textContent = originalText;
         }
       }
 
       async function fetchAndRender(manual = false) {
         if (state.busy) return;
         state.busy = true;
-        if (el.btnRefresh) el.btnRefresh.disabled = true;
+        if (el.btnRefresh) {
+          el.btnRefresh.disabled = true;
+          el.btnRefresh.textContent = 'Aggiornamento...';
+        }
         setStatus('pending', manual ? 'Aggiornamento manuale in corso' : 'Aggiornamento automatico in corso');
         hideError();
+        updateLocationSummary();
         try {
           const res = await fetch(buildOpenMeteoUrl(), { cache: 'no-store' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1002,9 +1561,9 @@
           renderCurrent(data, slices.idxNow);
           renderDiagnostics(slices.next24);
           renderHoursTable(slices.next12);
-          drawLineChart(el.tempChart, slices.next24.temp, slices.next24.time, { stroke:'#61a8ff', fill:'rgba(97,168,255,0.14)', yDigits:0 });
+          drawLineChart(el.tempChart, slices.next24.temp, slices.next24.time, { stroke:'#78aeff', fill:'rgba(120,174,255,0.14)', yDigits:0 });
           drawBarChart(el.rainChart, slices.next24.precipitation, slices.next24.time);
-          drawLineChart(el.windChart, slices.next24.wind, slices.next24.time, { stroke:'#fbbf24', fill:'rgba(251,191,36,0.14)', yDigits:0, forceZero:true });
+          drawLineChart(el.windChart, slices.next24.wind, slices.next24.time, { stroke:'#ffca62', fill:'rgba(255,202,98,0.13)', yDigits:0, forceZero:true });
           refreshRadarLayer();
           refreshBollettinoExtract(false);
           state.lastFetchEpoch = Date.now();
@@ -1016,7 +1575,10 @@
           showError(`Errore durante il recupero dati meteo: ${err.message || 'errore sconosciuto'}.`);
         } finally {
           state.busy = false;
-          if (el.btnRefresh) el.btnRefresh.disabled = false;
+          if (el.btnRefresh) {
+            el.btnRefresh.disabled = false;
+            el.btnRefresh.textContent = 'Aggiorna adesso';
+          }
           scheduleNextRefresh();
         }
       }
@@ -1027,6 +1589,7 @@
         if (el.lat) el.lat.value = c.lat.toFixed(4);
         if (el.lon) el.lon.value = c.lon.toFixed(4);
         if (el.locName) el.locName.value = c.name;
+        updateLocationSummary();
         if (doFetch) fetchAndRender(true);
       }
 
@@ -1034,7 +1597,10 @@
         if (el.citySelect) {
           el.citySelect.addEventListener('change', () => {
             const key = el.citySelect.value;
-            if (key === 'custom') return;
+            if (key === 'custom') {
+              updateLocationSummary();
+              return;
+            }
             applyCityPreset(key, true);
           });
         }
@@ -1048,6 +1614,7 @@
                 if (el.lat) el.lat.value = pos.coords.latitude.toFixed(4);
                 if (el.lon) el.lon.value = pos.coords.longitude.toFixed(4);
                 if (el.locName) el.locName.value = 'Posizione attuale';
+                updateLocationSummary();
                 fetchAndRender(true);
               },
               err => showError(`Geolocalizzazione non disponibile: ${err.message}`),
@@ -1059,6 +1626,13 @@
         if (el.btnBollettinoRefresh) el.btnBollettinoRefresh.addEventListener('click', () => refreshBollettinoExtract(true));
         if (el.bollettinoLink) el.bollettinoLink.setAttribute('href', CONFIG.bollettinoUrl);
         if (el.btnBollettinoTop) el.btnBollettinoTop.setAttribute('href', CONFIG.bollettinoUrl);
+        if (el.radarLayerLabel) el.radarLayerLabel.textContent = CONFIG.radar.layer;
+
+        ['input', 'change'].forEach(evt => {
+          if (el.lat) el.lat.addEventListener(evt, updateLocationSummary);
+          if (el.lon) el.lon.addEventListener(evt, updateLocationSummary);
+          if (el.locName) el.locName.addEventListener(evt, updateLocationSummary);
+        });
 
         document.addEventListener('visibilitychange', () => {
           if (document.hidden) return;
@@ -1069,6 +1643,7 @@
       function init() {
         cacheDom();
         if (!el.btnRefresh || !el.statusText) { console.error('Init fallita: elementi base mancanti'); return; }
+        updateLocationSummary();
         if (el.citySelect && el.citySelect.value !== 'custom') applyCityPreset(el.citySelect.value, false);
         bindEvents();
         setInterval(updateNextCountdown, 1000);
