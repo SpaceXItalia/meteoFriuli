@@ -1,0 +1,11 @@
+2026-03-06 10:52:26,177 - INFO - === Sounding Analyzer Pro started ===
+2026-03-06 10:52:50,156 - INFO - __main__ - === Sounding Analyzer Pro started ===
+2026-03-06 10:53:14,336 - INFO - __main__ - Dati OSMER Udine recuperati con pandas: {'temperature_c': 12.3, 'humidity_percent': 64.0, 'wind_dir_deg': 22.5, 'wind_speed_ms': 0.8333333333333333, 'pressure_hpa': 1015.1}
+2026-03-06 10:53:21,040 - INFO - __main__ - Report written: E:\soundings\reports\LIPI_20260306_00Z_convective_20260306_105320_report.html
+2026-03-06 14:26:48,644 - INFO - __main__ - === Sounding Analyzer Pro started ===
+2026-03-06 14:27:05,656 - INFO - __main__ - Report written: E:\soundings\reports\LIPI_20260306_12Z_convective_20260306_142705_report.html
+2026-03-06 14:27:17,032 - INFO - __main__ - Dati OSMER Udine recuperati con pandas: {'temperature_c': 17.5, 'humidity_percent': 43.0, 'wind_dir_deg': 157.5, 'wind_speed_ms': 1.9444444444444444, 'pressure_hpa': 1014.0}
+2026-03-06 14:27:22,304 - INFO - __main__ - Report written: E:\soundings\reports\LIPI_20260306_12Z_convective_20260306_142722_report.html
+2026-03-09 17:50:34,439 - INFO - __main__ - === Sounding Analyzer Pro started ===
+2026-03-09 17:51:37,436 - INFO - __main__ - Dati OSMER Udine recuperati con pandas: {'temperature_c': 15.5, 'humidity_percent': 52.0, 'wind_dir_deg': 180.0, 'wind_speed_ms': 2.5, 'pressure_hpa': 1013.4}
+2026-03-09 17:51:42,537 - INFO - __main__ - Report written: E:\soundings\reports\LIPI_20260309_12Z_convective_20260309_175142_report.html
